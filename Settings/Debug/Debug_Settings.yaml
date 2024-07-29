@@ -1,0 +1,74 @@
+#File usage: Strings get evaluated as Python code, numerical values are asigned numerical datatypes
+
+#Parameters to change or check for every training run
+EXPERIMENT_NAME: 'Debug'  #Suggest new experiment for every new dataset created
+RUN_ID: 'Run_01' #Replace with 'Debug' at some point
+DESCRIPTION: 'Reduced number of crops to run quickly' #Details of what is being investigated
+EXTRA_CORES: 3 #'None'= max cpu count used. 0 Means original processor only. Currently fastest with 1. CPU memory overflow with 5
+
+#Parameters that effect the choice of datasets or classes
+CLASSES_FROM_DIR_NMS: 'True'
+CLASSES: "['mouse','robin','possum','stoat','cat','rat','thrush','kea','blackbird','wallaby','tomtit','cow',
+          'sheep','human','rifleman','kiwi','rabbit','deer','weka','parakeet','ferret','hare','pukeko','harrier',
+          'bellbird','hedgehog','chaffinch','dunnock','sealion','weasel','pipit','yellow_eyed_penguin','magpie',
+          'myna','quail','greenfinch','yellowhammer','pig','kereru','tui','starling','sparrow','silvereye','fantail',
+          'dog','moth','goat','pateke','banded_rail','oystercatcher','black_fronted_tern','paradise_duck','mallard',
+          'morepork','goldfinch','chamois','redpoll','takahe','kaka','shore_plover','canada_goose','spurwing_plover',
+          'tieke','white_faced_heron','lizard','shag','black_backed_gull','little_blue_penguin','brown_creeper',
+          'black_billed_gull','crake','skylark','pheasant','skink','grey_warbler','swan','fernbird','banded_dotterel',
+          'rosella','fiordland_crested_penguin','pied_stilt','mohua','long_tailed_cuckoo','kingfisher','nz_falcon',
+          'grey_duck','spotted_dove','swallow'] + ['penguin', 'song thrush', 'bell', 'browncreeper', 'kakariki', 
+          'mice', 'tahr','waxeye', 'whio']"
+CLASSES_TO_EXCLUDE: "['shag', 'moth', 'skink', 'lizard', 'fernberd', 'skylark', 'grey_duck', 'long_tailed_cuckoo']"
+CLASSES_TO_IGNORE: "[]" #still train with images and detect, but assign to 'unknown' eg [penguin], A penguin and kea walk into a bar, the detector only pays attention to the kea, since the penguin is 'unknown'
+CLASS_JOINS:  "{'lizard':['skink', 'lizard'], 'finch':['greenfinch', 'goldfinnch', 'chaffinch'], 'quail':['quail_california', 'quail_brown']}"   #{'rodent':['rat','mouse'], 'mustelid':['ferret', 'stoat', 'weasel'], ..}
+CLASS_NAME_CHANGE: "{'penguin':'little_blue_penguin', 'song thrush':'thrush', 'NZ_falcon':'nz_falcon'}" # Folders labelled the first thing are labeled the second thing
+LOCATIONS_TO_EXCLUDE: "[]" #do nothing with these folders
+INDEPENDENT_TEST_ONLY: "['N01', 'BWS', 'EBF', 'EM1', 'ES1']"
+RELOAD_INDEPENDENT_SET: 'False'
+PROCESS_IMAGES: 'False'
+SOURCE_IMAGES_PTH: 'Z:\\alternative_footage\\CLEANED'
+
+#File and folder names (Could delete all these from here and use the defaults)
+DATA_FOLDER_NM: 'Data'
+EXPS_FOLDER_NM: 'Experiments'
+IMAGE_FOLDER_NM: 'Cropped_Images'
+INPUT_FOLDER_NM: 'Inputs'
+LABELS_FROM_JSON_NM: 'all_labels.parquet'
+CLEANED_LABELS_NM: 'cleaned_labels.parquet'
+CROP_LABELS_NM: 'crop_labels.parquet'
+TEST_DF_FN: '_test_split.parquet'
+METRICS_FN_SUFFIX: '_monitor_train.png'
+BEST_WEIGHTS_FN_SUFFIX: '_best_weights.pt'
+RESULTS_DF_SUFFIX: '_df.pkl'
+CLASS_NAMES_OUT: '_class_names.json'
+WEIGHTS_FOLDER_SUFFIX: '_weights'
+RESULTS_FOLDER_NM: 'Results' 
+MODELS_FOLDER_NM: 'Models'
+
+#Model Training parameters
+CROP_SIZE: 600 #Size of the training image crops.  Will randomly sample from this
+IMAGE_SIZE: 480 #Final width and height for inference, must be less than CROP_SIZE.
+BUFFER: 0.1 #Min fraction of total image w or h, TO be left around megaDetector bouding box
+MD_THRESHOLD_TO_TRAIN_WITH: 0.5 #Use samples with at least this MD detection confidence
+IMAGE_LIMIT: 500 #Max number of images from a given class-camera location combination
+LOW_CONF: "[]" #Classes that will be included regardless of MD detection confidence
+TEST_FRACTION: 0.1
+VAL_FRACTION: 0.1
+USE_FOCAL_LOSS: 'True'
+FOCAL_GAMMA: 2  #Focal loss parameter
+FOCAL_ALPHA: 'True'
+WEIGHTED_SAMPLING: 'True'
+USE_MIXUP: 'True'
+MIXUP_ALPHA: 0.5
+RANDOM_SEED: 2023
+MAX_EPOCHS: 1
+EPOCHS_BACKBONE_FROZEN: 'None' # Set to None to keep backbone frozen
+LOSS_FUNCTION: 'FocalLoss' # 'FocalLoss' #Could also use CrossEntropyLoss, but I think FocalLoss is likely best'
+PATIENCE: 1 # Stop training if the last 2 epochs made no improvement
+BATCH_SIZE: 8
+TRAIN_BATCH_SIZE: 64
+LEARNING_RATE: '1e-3'
+WEIGHT_DECAY: '1e-5'
+WEIGHTED_SAMPLING: 'False'  #Not yet implemented
+DEBUG_SPEED: 4
