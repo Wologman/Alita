@@ -4,7 +4,7 @@
 
 
 ## Summary
-Alita is a machine vision model created to automate the classification of New Zealand camera trap imagery.  It was made by  [Olly Powell](https://wekaresearch.com) for the [Department of Conservation](https://www.doc.govt.nz/) (DOC) national predator control program. The current version is trained with the 86 classes listed below:
+Alita is a machine vision model created to automate the classification of New Zealand camera trap imagery.  It was made for the [Department of Conservation](https://www.doc.govt.nz/) (DOC) national predator control program. The current version is trained with the 86 classes listed below:
 
 ['banded_dotterel', 'banded_rail', 'bellbird', 'black_backed_gull', 'black_billed_gull', 'black_fronted_tern', 'blackbird', 'canada_goose', 'cat', 'chamois', 'chicken', 'cow', 'crake', 'deer', 'dog', 'dunnock', 'fantail', 'ferret', 'finch', 'fiordland_crested_penguin', 'fluttering_shearwater', 'goat', 'grey_faced'_'petrol', 'grey_warbler', 'hare', 'harrier', 'hedgehog', 'horse', 'human', 'kaka', 'kea', 'kereru', 'kingfisher', 'kiwi' 'little_blue_penguin', 'magpie', 'mallard', 'mohua', 'morepork', 'mouse', 'myna', 'nz_falcon', 'oystercatcher', 'paradise_duck', 'parakeet',  'pateke', 'pheasant', 'pig', 'pipit', 'plover', 'possum', 'pukeko', 'quail', 'rabbit', 'rat', 'redpoll', 'rifleman', 'robin', 'rosella', 'sealion', 'sheep', 'shore_plover', 'silvereye', 'sparrow', 'spotted_dove', 'spurwing_plover', 'starling', 'stilt', 'stoat', 'swallow', 'swan', 'tahr', 'takahe', 'thrush', 'tieke', 'tomtit', 'tui', 'wallaby', 'weasel', 'weka', 'welcome_swallow', 'white_faced_heron', 'whitehead', 'wrybill', 'yellow_eyed_penguin', 'yellowhammer']
 
