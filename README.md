@@ -1,5 +1,7 @@
 # Alita v5.0
 
+This file is written in Markdown.  It looks better in a Mardown Interpreter.  If you don't have one already I suggest Obsidian, or VSCode.
+
 **If you simply want to download and run the inference code on a Windows computer then the deployment code along with all the model weights is available [here](https://drive.google.com/drive/folders/1UWStcmoF3qRWodygs3mmQhvfmg2ALZj0), and also linked from [wekaresearch.com](https://wekaresearch.com)**
 
 
@@ -39,7 +41,6 @@ I haven't tested on Linux, but in theory it can be used you have PowerShell set 
 
 
 ## Performance
-
 Scores below are for all 86 classes.  The go up if post-processing merges classes (for example calling both rat and mouse a rodent).  
 
 On randomly split samples from the same pool as the training samples:
