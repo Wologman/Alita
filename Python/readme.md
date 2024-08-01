@@ -1,4 +1,4 @@
-# Wildlife Classifier Code
+# Alita Python Directory
 
 ## Summary
 This Python code builds a machine vision model in PyTorch optimised for working with large collections of classified images, from camera  & video footage.  It uses the MegaDetector YoloV5 object detection model to localise the animals, and crop to a uniform size, prior to a seperate classification step.  Training performed here is only for the second step, allowing a classifier to be made with New Zealand's unique combination of fauna and flora, but benefit from the large bounding box annotated dataset that MegaDetector was built from.
@@ -6,10 +6,7 @@ This Python code builds a machine vision model in PyTorch optimised for working 
 
 ## Usage
 
-### Setup
-- Install MiniConda
-- Run_On_Windows > Setup_Everything.bat
-- I haven't tested on Linux, but in theory it should work if you have PowerShell set up
+If you are comfortable running the Python directly, then you can modify the default settings in the scripts themselves and run through your IDE.  For example fir inference you could change the DEFAULT_IMAGE_FOLDER_NM   parameter
 
 ### Inference
 1. Run_On_Windows > Setup_Everything.bat
