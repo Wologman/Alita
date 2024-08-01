@@ -1,7 +1,5 @@
 # Alita v5.0
 
-This file is written in Markdown.  It looks better in a Markdown Interpreter.  If you don't have one already I suggest Obsidian, or VSCode.
-
 **If you simply want to download and run the inference code on a Windows computer then the deployment code along with all the model weights is available [here](https://drive.google.com/drive/folders/1UWStcmoF3qRWodygs3mmQhvfmg2ALZj0), and also linked from [wekaresearch.com](https://wekaresearch.com)**
 
 
