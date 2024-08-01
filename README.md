@@ -1,3 +1,3 @@
 # Readme
 
-This repo is for my journey towards mastering the systematic use of Jupyter Notebooks with QGIS for GeoSpatial data projects. I find this to be a really useful way to work and I hope to make it into a training course eventually.
+ This Repo holds the main code for Alita.   A PyTorch based camera trap wildlife classifier.   To download the inference code complete with the model weights go to [wekaresearch.com](https://wekaresearch.com)
