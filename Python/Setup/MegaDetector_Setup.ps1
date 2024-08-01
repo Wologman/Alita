@@ -39,7 +39,13 @@ if ($environmentExists) {
     Write-Host "Attempting to setup the megaDetector environment now"    
     conda env create --file $megaFilePath
     $environmentExists = (conda info --envs | Select-String -Pattern "^$megaEnvironment").Count -gt 0
-    if ($environmentExists) {"The Conda environment '$megaEnvironment' has been create successfully"}
+    if ($environmentExists) {
+        Write-Host "The Conda environment '$megaEnvironment' has been created successfully"
+        } else {
+        Write-Host "The Conda environment '$megaEnvironment' has not been detected even though we tried to create it"
+        Write-Host "The Most likely reason for this is your computer fell asleep or your internet connection was disrupted"
+        Write-Host "Sorry all I can suggest is you try to re-run the setup_everything.bat script, and/or try from a more solid internet connection"
+        }
     }
 
 # Check if the models directory already exists
@@ -65,4 +71,4 @@ if ($downloadModel -eq $true) {
     Invoke-WebRequest -Uri $modelURL -OutFile $modelFilePath
 }
 
-Write-Host "The MegaDetector setup script has completed without error"
+Write-Host "The MegaDetector setup script has completed"
