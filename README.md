@@ -1,6 +1,6 @@
 # Alita v5.0
 
-**If you simply want to download and run the inference code on a Windows computer then the deployment code along with all the model weights is available [here](https://drive.google.com/drive/folders/1UWStcmoF3qRWodygs3mmQhvfmg2ALZj0), and also linked from [wekaresearch.com](https://wekaresearch.com)**
+If you simply want to download and run the inference code on a Windows computer then the deployment code along with all the model weights is available [here](https://drive.google.com/drive/folders/1UWStcmoF3qRWodygs3mmQhvfmg2ALZj0), and also linked from [wekaresearch.com](https://wekaresearch.com)
 
 
 ## Summary
