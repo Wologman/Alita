@@ -1,0 +1,58 @@
+
+#cd ./Setup
+#conda env create --file win_predator_env.yaml
+
+#pip install --no-deps PytorchWildlife   (in shell after running this, just to get the PW modules)
+#pip install --no-deps ultralytics-yolov5   # this takes care of the missing yolov5 module, but seems to be missing 'scale_coords'
+
+name: alita
+channels:
+  - conda-forge
+  - pytorch
+  - nvidia
+  
+dependencies:
+  - python=3.10
+  - pytorch-cuda=12.1
+  - pytorch=2.01
+  - numpy=1.25.2
+  - pytorch-lightning=2.5.1  #=2.0.6
+  - torchvision=0.16   #=0.15.2
+  - timm=0.9.7 
+  - pandas
+  - tqdm
+  - ipython
+  - jupyter
+  - matplotlib
+  - plotly=
+  - plotly_express
+  - scipy=
+  - scikit-learn
+  - scikit-image
+  - seaborn=
+  - albumentations
+  - opencv=4.8.0
+  - python-kaleido
+  - fastparquet
+  - pyarrow
+  - piexif
+  - pyyaml
+  - h5py
+  - imagehash
+  - pyinstaller 
+  #- ipaddress  #shouldn't be needed with python > 3.3
+  # Pytorch wildlife dependencies
+  #- ultralytics
+  #- supervision
+  #- tensorboard
+  #- python-wget
+
+  # Megadetector dependancies
+  - humanfriendly
+  - jsonpickle
+  - pip
+  - pip:
+    #- ultralytics-yolov5==0.1.1  #put this in teh folder directly rather than install
+      # Packages that are only on PyPi
+      #- some_crazy_package
+
