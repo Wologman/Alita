@@ -1,95 +1,63 @@
-# Alita v5.0
+# Alita v3.0
 
 This file is written in Markdown.  It looks better in a Mardown Interpreter.  If you don't have one already I suggest Obsidian, or VSCode.
 
-**If you simply want to download and run the inference code on a Windows computer then the deployment code along with all the model weights is available [here](https://drive.google.com/drive/folders/1UWStcmoF3qRWodygs3mmQhvfmg2ALZj0), and also linked from [wekaresearch.com](https://wekaresearch.com)**
+**If you simply want to download and run the inference code on a Windows computer then the deployment code along with all the model weights is linked from [wekaresearch.com](https://wekaresearch.com)**
 
 
-## Summary
-Alita is a machine vision model created to automate the classification of New Zealand camera trap imagery.  It was made by  [Olly Powell](https://wekaresearch.com) for the [Department of Conservation](https://www.doc.govt.nz/) (DOC) national predator control program and the threats science team. The current version is trained with the 86 classes listed below:
+## About Alita
 
-['banded_dotterel', 'banded_rail', 'bellbird', 'black_backed_gull', 'black_billed_gull', 'black_fronted_tern', 'blackbird', 'canada_goose', 'cat', 'chamois', 'chicken', 'cow', 'crake', 'deer', 'dog', 'dunnock', 'fantail', 'ferret', 'finch', 'fiordland_crested_penguin', 'fluttering_shearwater', 'goat', 'grey_faced'_'petrol', 'grey_warbler', 'hare', 'harrier', 'hedgehog', 'horse', 'human', 'kaka', 'kea', 'kereru', 'kingfisher', 'kiwi' 'little_blue_penguin', 'magpie', 'mallard', 'mohua', 'morepork', 'mouse', 'myna', 'nz_falcon', 'oystercatcher', 'paradise_duck', 'parakeet',  'pateke', 'pheasant', 'pig', 'pipit', 'plover', 'possum', 'pukeko', 'quail', 'rabbit', 'rat', 'redpoll', 'rifleman', 'robin', 'rosella', 'sealion', 'sheep', 'shore_plover', 'silvereye', 'sparrow', 'spotted_dove', 'spurwing_plover', 'starling', 'stilt', 'stoat', 'swallow', 'swan', 'tahr', 'takahe', 'thrush', 'tieke', 'tomtit', 'tui', 'wallaby', 'weasel', 'weka', 'welcome_swallow', 'white_faced_heron', 'whitehead', 'wrybill', 'yellow_eyed_penguin', 'yellowhammer']
+Alita is a combination of two deep learning models that predicts the presence or absense of 77 classes of animal from camera trap images or video.  The classification step was made by Olly Powell for the Department of Conservation.  Alita works best on still images typical of DOC's standard trailcam setup.
 
-## How it works
-Alita is actually the combination of two seperate models, both using the PyTorch deep learning framework. 
-1. [MegaDetector](https://github.com/microsoft/CameraTraps/blob/main/megadetector.md)   - A YOLOv5 object detection model.  From this we determine if the image is empty, and predict where the centre of the animal is located.
-2. A custom classifier based on EfficientNetV2L.  The 480 pixels around the predicted animal centre cropped and fed to the neural network.  If multiple images are taken in quick succession, then the most confident prediction is made and referred to as one 'encounter'.  In the case of video, one video clip is considered a single encounter.
+Under the hood, there are two main stages to the process.  The first is an animal detection step, based on [Dan Morris's MegaDetector](https://github.com/agentmorris/MegaDetector).  This produces a  file `detections.json`, which predicts a bounding box around an animal within an image.  Only bounding boxes with probability scores over 0.05 are used.
 
-The advantage to this approach is the fine-grained classification is done efficiently with small images but without any loss of pixels in the region of interest. Some of the animals being classified here are only a few pixels across, if the whole image was downsized there would not be much information left to work with. The DOC image dataset currently has no bounding boxes, just class labels.
+The second stage is a pure classification step, that takes only the highest probability bounding box, and crops its own a box of 480x480 pixels around the centroid.  This crop is passed through a second neural network.  This network predicts the presence or absence of 77 species independently.  They are treated as 'multi-label' predictions, and do not sum to 1.
 
-Since these two models each have their own Python environments and dependencies, they are run sequentially.  PowerShell scripts handle the whole process, including the transition.  Future versions will be less complex.  We followed this path as initially it wasn't clear what role, if any, object detection would play in inference, and also to ensure future versions of MegaDetector to be incorporated easily if needed.  
-
-## Usage
-
-### Requirements:
-- Windows 10 or later
-- NVIDIA GPU with minimum 4Gb VRAM (Or it will do CPU-only processing slowly)
-- [miniConda](https://docs.anaconda.com/miniconda/), miniForge or Anaconda
-
-### Setup
-1.  Install [miniConda](https://docs.anaconda.com/miniconda/), make sure it is included in the Path variable (It is currently a box tick on install, though you have to chose to install for 'Me Only' rather than 'All users')
-2. Move this folder to where you want the code to sit permanently.  I suggest somewhere without troublesome file paths, such as a root directory (eg. `c:\\`).  
-
-3.  Find the *Run_On_Windows* folder, and click on *Setup_Everything.bat*
-
-I haven't tested on Linux, but in theory it can be used you have PowerShell set up. 
-
-### Inference
-1. Run_On_Windows > Infer_Dataset.bat
-2. Find the folder containing your images or video, copy as path, paste the path into the terminal.
-3. The output should be two .csv files, located in the image folder.  One simply has the prediction for the encounter, the second has the full probability scores for every image along with bounding box info.
+The possible outcomes are:
+* Any of 77 animals,  all the prediction scores are provided in the CSV.
+* Any of 77 animals, from the maximum score of all images taken within 30 seconds of each other.  This prediction is labelled an 'encounter'.
+* OR  'Empty',  where **Both** models were below thresholds their preset thresholds.  
+* OR  'Unknown', where the detection model predicted an animal witha score over 0.15, but the classifier provided no scores over the classifier threshold (selectable by the user in the GUI).
 
 
-## Performance
-Scores below are for all 86 classes.  The go up if post-processing merges classes (for example calling both rat and mouse a rodent).  
+The model is imperfect, but if used carefully it should be orders of magnitude faster than manually checking images, for only a small loss in accuracy.  Typically one class will be over 0.9 and the rest very small, making the threshold choice unimportant.  However in some terrain the model does not do as well as expected.  At the time of writing, the accuracy on goats was noteably inconsistent.
 
-On randomly split samples from the same pool as the training samples:
+If your goal is to locate a specific specific but sparce species.  For example you are trying to hunt down every last rat in an island sanctuary, then you can chose a relatively low classification threshold, like 0.3, and accept that you may have some false identifications that need manual checking.
 
-- Balanced Accuracy (BA):  **0.78**  
-- macro Average Precision (mAP):  **0.86**  
-- F1  **0.82**  
+If your goal is to monitor relative change in populations, then you should use a higher threshold like 0.6.  This will reduce false positives and help to keep your outcomes for each class more independent.  You could also go through the 'Unknown' predictions to investigate sources of error.
 
-The above scores are an over-estimate of real-world performance, as we only randomly split this test set from the total collection of samples. Since they came from the same original cameras they are somewhat correlated to each other. To reduce this data leakage we hold a second test set aside (not publicly available) from entirely different camera locations.  These more realistic scores are below:
+## Instructions for Use
 
-- BA:  **0.683**   
-- mAP:  **0.76**     	
-- F1:  **0.70**  
+* The zipped folder should contain everything needed to run Alita on a Windows desktop.  Just download and unzip to any convenient location.
 
-I listed the two sets of scores to highlight the importance of image diversity and careful selection of validation schemes when working with camera trap data.  What makes this challenge hard, compared to some image classification is the sheer number of very similar images, due to the nature of camera traps.  This can create a tension between over-training on a particular class from a particular location,  and under-training because we lack images of sufficient diversity, despite having such a massive total.
+* If you right-click on `launch_alita.exe` you could create a shortcut on your system tray or the start menu.
 
-### Retraining
-In principle you can re-train on windows without any Python coding, from the I have shell scripted this too, all that would need changing is the settings file, and for the training images to be arranged by class name.  You then run `Train_Evaluate_Log.py`.  
+* There is no installation required.  To remove the program simply delete the folder.
 
-You can even re-train multiple times without intervention by setting up a cue of settings files.
+* If your machine has an NVIDIA GPU, it is possible to use that for increased speed by selecting the check-box in the GUI.
 
-I was exploring ways to make complex Python code accessable within an organisation that doesn't necessarily have much Python expertise.
+* Follow the various prompts to run the tool.   It will produce three files.
+    - `xxxx_full_predictions.csv`:  A CSV with probability scores for all animals, the top-3 animals, bounding boxes, and a column named *Encounter* where the top animal from all the images within a short burst of images.
+    - `xxxx_predictions.csv`:   Only the *Encounter* and it's score.
+    - `alita_predictions.json`:  A file in the format required to visualise the results in [Timelapse](https://timelapse.ucalgary.ca/)
 
-In practice, this is a much more advanced use-case and has not had nearly as much debugging.  I would be a little surprised if it ran smoothly first time in a completely different setting with a new dataset.  
+*  If you are interested one particular species, you can select it from a dropdown box and an additional `.csv` and `.json` file will be produced with the probability scores for that species only.  For example, if you select 'Weka'  everything is a Weka, but with varying probability.  You could then play with different threshold settings in [Timelapse](https://timelapse.ucalgary.ca/).
 
-If I was to start this project from scratch, but with many hard lessons now learned I would set up all the training scripts in Linux, and just made the inference for Windows.  Then installed a dual booting system, or WSL on the relevent Windows machines in the downstairs office.
+* This was treated as a multi-label problem, the predictions are independent of each other and the scores do not necessarily sum to 1. In principle you could predict two species in the same image, though one of them would likely be wrong as this is very rare.
 
-## Links and Related Work
+## The Data
 
-- [The entire collection of DOC camera trap training imagery](https://lila.science/datasets/nz-trailcams).  Alita was trained on a subset of this imagery. 
-- [Pytorch Wildlife](https://github.com/microsoft/CameraTraps/blob/main/megadetector.md)  
-- [Peter van Lunteren's projects](https://addaxdatascience.com/projects/)
+* The dataset used to make this model is available on [LILA BC](https://lila.science/).  It has come from a variety of sources, and has been collated by Joris Timmermans, with the awesome help of our two dedicated volunteers Jan and Jane.
 
-### Future Improvements
-We have a TODO list for various improvements, but if you have further suggestions, please contact Olly (at [wekaResearch](https://wekaresearch.com)) or Joris at DOC.  Some plans we already have include:
+*  The model was trained on only a subset of this data, to address class embalance, whilst retaining maximum feature diversity.  Olly intends to make public the methods and Python code he has been developing for this process.
 
-- Integrate the MegaDetector model, rather than running as a separate  script with it's own dependencies and Python environment.  When this project was started it wasn't clear we would continue to use MD.  Now we're past that point it makes sense to integrate it more cleanly.
-- Upgrade to MegaDetector V6.  This should improve our accuracy on empties, as well as inference speed.
-- Package the set up and dependencies into a `.exe` file
-- A Linux version
-- Checkpointing.   Currently if you have a crash or a power cut in the middle of processing a million images, you're stuffed.  Though if the MegaDetector part has completed, you can leave the `.json` file in place and re-start and at least that stage will be skipped.  MegaDetector is the slowest step at the moment.
-- Implement a secondary pass to check for empties.  The most common error on real world use cases is false predictions for the empty class, since typically this is by far the most common class.  So this is the lowest hanging fruit in terms of usefulness with regards to performance.
-- *Image hashing* - Localised on the region around the predicted region of interest.  So we can store some metadata for the uniqueness of each image, estimate the value of the image to DOC, and use for prioritisation on use for future training, or validation.
-- My long term vision for all the detection & monitoring tools we're working on is to have them integrateing nicely with spatial workflows.  So we can apply spatial statistical models & produce and visualise interesting insights with the repeatability, flexibility and rigour that come from a Conda-Python-Jupyter approach to spatial data. But with the extra capabilities of PyQGIS.
+* Work on evaluating accuracy, adding new classes, additional training data is ongoing.  In particular Olly is interested in improving the variance in behaviour between test sites and setups, as we are trying to predict relative change.
+
 
 ## Acknowledgements
-- Joris Tinnemans, for his tireless energy getting this work started, and coordinating the dataset curation and processing. 
-- Jan Hewton and Jane Stevens, who between them manually checked most of our database of more than 2.5 million images.
-- A long list of parties that supplied additional datasets, including those on [Lila Science](https://lila.science/).
-- All our volunteers and rangers who collected images from more than 30 regions in New Zealand.
-- Dan Morris and his team, for his work producing and maintaining the MegaDetector.
-- The folks in the Threats Science and NPCP teams at DOC for their encouragement and support.
+*  Joris Tinnemans, for his tireless energy getting this work started, and coordinating the dataset curation and processing. 
+*  Jan Hewton and Jane Stevens, who between them manually checked most of our database of more than 2.5 million images.
+*  A long list of parties that supplied additional datasets, including those on [Lila Science](https://lila.science/).
+*  All our volunteers and rangers who collected images from more than 30 regions in New Zealand.
+*  Dan Morris and his team, for his work producing and maintaining the MegaDetector.
+*  The folks in the Threats Science and NPCP teams at DOC for their encouragement and support.
