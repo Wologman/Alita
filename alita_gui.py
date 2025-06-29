@@ -1,9 +1,9 @@
-#  To compile to .exe:  (bird_audio_infer) PS E:\Kaytoo\Python> pyinstaller --name kaytoo --onefile kaytoo_gui.py --distpath .  
-#import ipaddress  #Just to prevent a pyinstaller error
+import sys, os
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 import warnings
 from multiprocessing import freeze_support
 warnings.filterwarnings("ignore", category=UserWarning, message='A new version')
-import sys
+
 from PyQt5.QtWidgets import (QApplication,  QSizePolicy, QSystemTrayIcon,QHBoxLayout, 
                              QGraphicsDropShadowEffect, QWidget, QLabel, QLineEdit, 
                              QComboBox, QPushButton, QVBoxLayout, QFileDialog, QCheckBox,
@@ -12,7 +12,7 @@ from PyQt5.QtGui import QDesktopServices, QIcon
 from PyQt5.QtCore import Qt, QUrl, QStandardPaths
 from pathlib import Path
 import os
-from Inference import predict_images
+from inference import predict_images
 import pandas as pd
 
 from PyQt5.QtCore import QDir
@@ -479,49 +479,49 @@ class MainWindow(QMainWindow):
 
 
     def run_program(self):
-        input_folder = self.input_path.text()
-        output_folder = self.output_path.text()
-        threshold = float(self.threshold_combobox.currentText())
-        num_cores = self.cores_combobox.currentText()
-        use_cpu = not bool(self.gpu_checkbox.isChecked())
-        naming_index = self.naming_combo.currentIndex()
-        chosen_classes = self.special_animal_dropdown.selected  #Something wrong with this
+        if __name__ == "__main__":
+            input_folder = self.input_path.text()
+            output_folder = self.output_path.text()
+            threshold = float(self.threshold_combobox.currentText())
+            num_cores = self.cores_combobox.currentText()
+            use_cpu = not bool(self.gpu_checkbox.isChecked())
+            naming_index = self.naming_combo.currentIndex()
+            chosen_classes = self.special_animal_dropdown.selected  #Something wrong with this
 
-        if not input_folder or not output_folder:
-            msg = QMessageBox.critical(self, "Please specify both input and output folder paths.")
-            return
-        if not os.path.isdir(input_folder):
-            msg = QMessageBox.critical(self, "The input folder is not a valid directory, please chose another one.")
-            return
-        if not os.path.isdir(output_folder):
-            msg = QMessageBox.critical(self, "Nearly there", "The output folder path is not a valid directory, please chose another location.")
-            return
+            if not input_folder or not output_folder:
+                msg = QMessageBox.critical(self, "Please specify both input and output folder paths.")
+                return
+            if not os.path.isdir(input_folder):
+                msg = QMessageBox.critical(self, "The input folder is not a valid directory, please chose another one.")
+                return
+            if not os.path.isdir(output_folder):
+                msg = QMessageBox.critical(self, "Nearly there", "The output folder path is not a valid directory, please chose another location.")
+                return
 
+            arguments = {
+                    'project_dir': self.parent_folder,
+                    'image_dir': input_folder,
+                    'settings_pth': self.parent_folder / 'Models/Exp_46/Exp_46_Run_21.yaml',
+                    'weights_pth': self.parent_folder / 'Models/Exp_46/Exp_46_Run_21_best_weights.pt',
+                    'detector_weights_pth': self.parent_folder / 'Models/md_v5a.0.0.pt',
+                    'md_empty_threshold': 0.15,
+                    'classify_conf_threshold': threshold,
+                    'predictions_dir': output_folder,
+                    'naming_scheme': self.naming_schemes[naming_index],
+                    'cpu_only': use_cpu,
+                    'num_workers': int(num_cores),
+                    'special_interest_classes': chosen_classes,
+                    }
 
-        arguments = {
-                'project_dir': self.parent_folder,
-                'image_dir': input_folder,
-                'settings_pth': self.parent_folder / 'Models/Exp_46/Exp_46_Run_21.yaml',
-                'weights_pth': self.parent_folder / 'Models/Exp_46/Exp_46_Run_21_best_weights.pt',
-                'detector_weights_pth': self.parent_folder / 'Models/md_v5a.0.0.pt',
-                'md_empty_threshold': 0.15,
-                'classify_conf_threshold': threshold,
-                'predictions_dir': output_folder,
-                'naming_scheme': self.naming_schemes[naming_index],
-                'cpu_only': use_cpu,
-                'num_workers': int(num_cores),
-                'special_interest_classes': chosen_classes,
-                }
-
-        try:
-            df, speed = predict_images(**arguments)
-            num_preds = len(df)
-            if num_preds > 0: 
-                QMessageBox.information(self, f"Yay, Success", f"Alita completed processing {num_preds} files!")
-            if num_preds == 0:
-                QMessageBox.information(self, "Hmmmm", "Alita completed processing but no predictions were made.  Was the folder empty?")
-        except Exception as e:
-            QMessageBox.critical(self, "Bummer", f"For some mysterious reason the program failed. The error code was: {e}")
+            try:
+                df, speed = predict_images(**arguments)
+                num_preds = len(df)
+                if num_preds > 0: 
+                    QMessageBox.information(self, f"Yay, Success", f"Alita completed processing {num_preds} files!")
+                if num_preds == 0:
+                    QMessageBox.information(self, "Hmmmm", "Alita completed processing but no predictions were made.  Was the folder empty?")
+            except Exception as e:
+                QMessageBox.critical(self, "Bummer", f"For some mysterious reason the program failed. The error code was: {e}")
 
 
 import tempfile
