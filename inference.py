@@ -27,9 +27,8 @@ from tqdm import tqdm
 import yaml
 from typing import Optional, Tuple, List, Literal, Dict
 from dataclasses import dataclass
-import zlib
-import base64
 import re
+from process_video import decompress_path
 
 #ML & Pytorch
 import torch
@@ -823,12 +822,32 @@ def agg_rows_by_mean(df):
     return agg_df
 
 
-def decompress_path(encoded: str) -> str:
-    """Decode a filename-safe string back to the original path."""
-    b64_bytes = encoded.encode("ascii")                   # 1. Convert to bytes
-    compressed = base64.urlsafe_b64decode(b64_bytes)      # 2. Decode from base64
-    utf8_bytes = zlib.decompress(compressed)              # 3. Decompress
-    return utf8_bytes.decode("utf-8")                     # 4. Decode to original string
+def map_video_paths_by_parent(df: pd.DataFrame, mapping_filename: str = "frame_mapping.json") -> pd.DataFrame:
+    """
+    Adds a 'vid_path' column to the DataFrame by reverse-mapping image filenames to video paths,
+    using the mapping file in each parent directory.
+    """
+
+    def apply_mapping(group: pd.DataFrame) -> pd.Series:
+        mapping_path = Path(group['parent_dir'].iloc[0]) / mapping_filename
+        if not mapping_path.exists():
+            raise FileNotFoundError(f"Mapping file not found: {mapping_path}")
+
+        with open(mapping_path, 'r', encoding='utf-8') as f:
+            mapping = json.load(f)
+
+        # mapping is a list of [video_path, frame_name]
+        reverse_map = {frame: video for video, frame in mapping}
+
+        # Extract frame filename from the index, then map
+        return pd.Series(
+            [reverse_map.get(Path(str(p)).name, None) for p in group.index],
+            index=group.index
+        )
+
+    df = df.copy()
+    df['vid_path'] = df.groupby('parent_dir', group_keys=False).apply(apply_mapping)
+    return df
 
 
 def collate_video(df: pd.DataFrame,
@@ -840,11 +859,11 @@ def collate_video(df: pd.DataFrame,
     """
     
     df = df.copy()
-    df['vid_path'] = [decompress_path(re.sub(r"_\d+$", "", Path(index_value).stem)) for index_value in df.index]  #jkjofsuiwe2jkfdui_0008
     df['parent_dir'] = [Path(index_value).parent for index_value in df.index] #parent folder
     df['grandparent'] = [Path(index_value).parent.parent for index_value in df.index]  #grandparent folder
     grandparents = df['grandparent'].unique().tolist()
     df = df.drop(['grandparent'], axis=1)
+    df = map_video_paths_by_parent(df)
 
     if use_mean_scores:
         df = agg_rows_by_mean(df)  #gets the average scores, then recalculates the first, second, third probability
@@ -1020,11 +1039,6 @@ def make_results_table(results_dict: dict,
         if verbose:
             print('Collating predictions into encounters')
         results_df = collate_encounters(results_df, time_window=time_window)
-
-    ## collate_encounters should be the place max_confidence gets added
-
-    print('\n\n the results df after collate_encounters')
-    print(list(results_df.columns)[:20])
 
     if not videos_df.empty:
         videos_df = collate_video(videos_df,
@@ -1323,8 +1337,8 @@ if __name__ == '__main__':
     #images =   str(project_dir / 'data/Cats')
     #images = "C:/Users/ollyp/OneDrive/Desktop/empty_folder"
     images = str(project_dir / "data/vids_small")
-    results_path = "C:/Users/ollyp/OneDrive/Desktop"
-    #results_path =  "/home/olly/Desktop"  
+    #results_path = "C:/Users/ollyp/OneDrive/Desktop"
+    results_path =  "/home/olly/Desktop"  
     settings = str(project_dir / 'models/Exp_46/Exp_46_Run_21.yaml')
     classify_weights = str(project_dir / 'models/Exp_46/Exp_46_Run_21_best_weights.pt')
     detector_weights = str(project_dir / 'models/md_v5a.0.0.pt')
