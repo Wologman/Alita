@@ -1,8 +1,31 @@
 ''' Accepts a dataframe of images, classes, camera locations, study area and bounding boxes
-    Method-1    Performs image hash from a class + camera location to remove near dupicates
-    Method-2    Group by class + study area
-                Uses the MD boxes to crop the image, then generate embeddings 
-                Select N images for the maximum diversity of embeddings
+    Uses this metadata for various methods to balance the training dataset whilst trying to retain
+    image diversity.  
+
+    Methods:  
+    limit_randomly(): 
+        Randomly discard from a class per camera or geographic grouping to some upper limit 
+
+    remove_duplicates_by_hash():
+        Performs perceptual image hash from a class + camera location to remove near dupicates
+        applied on the crops from MegaDetector bounding boxes.  Needs some sensible threshold for
+        'similarness' for the hash value.
+
+    limit_with_embeddings(): 
+        Runs crops of the detected animal through a pre-trianed network.  Selects N images for each
+        class + geographic grouping to maximise angular distance between embeddings.                
+
+    limit_with_bbox_vals():
+        Tries to use the MegaDetector values as features for k-means clustering to group all the images
+        from a given class + camera into N groups.  One image is taken from the centre of each group.
+    
+    My current best approach: 
+        1. remove_duplictes_by_hash() per-camera, with min_distance = 50
+        2. limit_with_embeddings() on both a per-camera basis (Max 180 images), 
+        3. limit_with_embeddings() per 'study area' (max 2000 images), 
+    The 'study area' is the equivalent of a particular valley in a given year.  
+    This reduces DOC's image dataset from approx 3.5 million to 350,000 whilst improving performance on new regions.
+    I haven't explored these methods as systematically as I would like yet.
 '''
 
 import sys
