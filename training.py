@@ -4,6 +4,7 @@ Saves out the test set predictions for futher evaluation.
 '''
 #Standard Python
 import os # sys
+import shutil
 import time
 import gc
 import json
@@ -94,12 +95,12 @@ class DataConfig:
 
 class Paths:
     '''Wrapper class for filepaths'''
-    DATA_FOLDER_NM = 'Data'
-    INPUT_FOLDER_NM = 'Inputs'
-    EXPS_FOLDER_NM = 'Experiments'
+    DATA_FOLDER_NM = 'data'
+    INPUT_FOLDER_NM = 'inputs'
+    EXPS_FOLDER_NM = 'experiments'
     SETTINGS_FOLDER_NM = 'Settings'
-    RUNS_FOLDER_NM = 'Runs'
-    IMAGE_FOLDER_NM = 'Cropped_Images'
+    RUNS_FOLDER_NM = 'runs'
+    IMAGE_FOLDER_NM = 'cropped_images'
     CROP_LABELS_NM = 'crop_labels.parquet'
     #TEST_DF_FN = '_test_split.parquet'  #The final label df in the right form for the dataloader
     VAL_DF_FN = '_val_split.parquet'
@@ -108,8 +109,8 @@ class Paths:
     BEST_WEIGHTS_FN_SUFFIX = '_best_weights.pt'
     RESULTS_DF_SUFFIX = '_df.pkl'
     CLASS_NAMES_OUT = '_class_names.json'
-    RESULTS_FOLDER_NM = 'Results'  # Increment or name this to name the results folder
-    MODELS_FOLDER_NM = 'Models'
+    RESULTS_FOLDER_NM = 'results'  # Increment or name this to name the results folder
+    MODELS_FOLDER_NM = 'models'
 
     def __init__(self, experiment_name, run_id=None, ):
         _project_dir = Path(__file__).resolve().parent.parent
@@ -122,8 +123,9 @@ class Paths:
         self.results_dir = _experiment_dir / self.RUNS_FOLDER_NM / run_id / self.RESULTS_FOLDER_NM
         self.models_dir = _experiment_dir / self.RUNS_FOLDER_NM / run_id / self.MODELS_FOLDER_NM
         self.weights_pth = self.models_dir / f'{run_id}{self.WEIGHTS_FOLDER_SUFFIX}'
-        self.final_weights_pth = self.weights_pth / f'{run_id}{self.BEST_WEIGHTS_FN_SUFFIX}'
-        self.class_names_pth = self.results_dir / f'{run_id}{self.CLASS_NAMES_OUT}'
+        self.final_weights_pth = self.models_dir / f'{experiment_name}_{run_id}{self.BEST_WEIGHTS_FN_SUFFIX}'
+        self.final_settings_pth = self.models_dir / f'{experiment_name}_{run_id}.yaml'
+        self.class_names_pth = self.models_dir / f'{experiment_name}_{run_id}{self.CLASS_NAMES_OUT}'
         #self.test_parquet_pth = self.results_dir / f'{run_id}{self.TEST_DF_FN}'
         self.val_parquet_pth = self.results_dir / f'{run_id}{self.VAL_DF_FN}'
         self.train_metrics_pth = self.results_dir / f'{run_id}{self.METRICS_FN_SUFFIX}'
@@ -459,7 +461,7 @@ class ImageAugmentation():
             A.OneOf([A.RandomFog(p=1), 
                      A.RandomRain(rain_type='torrential', p=1)], p=0.2),
             A.Sequential([
-                A.ShiftScaleRotate(shift_limit=0.1, scale_limit=(-.5, .1), rotate_limit=30, p=0.8),
+                A.ShiftScaleRotate(shift_limit=0.1, scale_limit=(-.5, .3), rotate_limit=30, p=0.8),  #current best (-.5, 0.2), 0.6
                 A.GridDistortion(num_steps=5, distort_limit=0.1, p=0.1),
                 A.RandomCrop(height=height, width=width, p=1)]),
             A.OneOf([A.RGBShift(r_shift_limit=15, g_shift_limit=15, b_shift_limit=15, p=1), 
@@ -467,8 +469,8 @@ class ImageAugmentation():
                      A.RandomBrightnessContrast(p=1),
                      #A.ChannelShuffle(p=1),  perfomance on hidden set jumped 1.7% when this was removed.
                     ], p=0.5),
-            A.ToGray(p=0.2), 
-            A.RandomShadow(p=0.2),
+            A.ToGray(p=0.3), 
+            A.RandomShadow(p=0.3),
             A.RandomSunFlare(src_radius=200, p=.2),
             A.HorizontalFlip(p=0.5),
             A.ImageCompression(quality_lower = 70, p=.2),
@@ -1065,6 +1067,7 @@ def train(settings_path):   #settings_path="/media/olly/Red_SSD/Alita/Settings/E
     train_cfg, image_cfg, data_cfg = get_settings(settings_path)
     paths = Paths(train_cfg.EXPERIMENT_NAME, train_cfg.RUN_ID)
     num_workers, accelerator  = set_hardware(train_cfg)
+    shutil.copy(settings_path, paths.final_settings_pth)
 
     print('The crop labels')
     labels_df = pd.read_parquet(paths.labels_path)

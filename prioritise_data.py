@@ -1,31 +1,8 @@
 ''' Accepts a dataframe of images, classes, camera locations, study area and bounding boxes
-    Uses this metadata for various methods to balance the training dataset whilst trying to retain
-    image diversity.  
-
-    Methods:  
-    limit_randomly(): 
-        Randomly discard from a class per camera or geographic grouping to some upper limit 
-
-    remove_duplicates_by_hash():
-        Performs perceptual image hash from a class + camera location to remove near dupicates
-        applied on the crops from MegaDetector bounding boxes.  Needs some sensible threshold for
-        'similarness' for the hash value.
-
-    limit_with_embeddings(): 
-        Runs crops of the detected animal through a pre-trianed network.  Selects N images for each
-        class + geographic grouping to maximise angular distance between embeddings.                
-
-    limit_with_bbox_vals():
-        Tries to use the MegaDetector values as features for k-means clustering to group all the images
-        from a given class + camera into N groups.  One image is taken from the centre of each group.
-    
-    My current best approach: 
-        1. remove_duplictes_by_hash() per-camera, with min_distance = 50
-        2. limit_with_embeddings() on both a per-camera basis (Max 180 images), 
-        3. limit_with_embeddings() per 'study area' (max 2000 images), 
-    The 'study area' is the equivalent of a particular valley in a given year.  
-    This reduces DOC's image dataset from approx 3.5 million to 350,000 whilst improving performance on new regions.
-    I haven't explored these methods as systematically as I would like yet.
+    Method-1    Performs image hash from a class + camera location to remove near dupicates
+    Method-2    Group by class + study area
+                Uses the MD boxes to crop the image, then generate embeddings 
+                Select N images for the maximum diversity of embeddings
 '''
 
 import sys
@@ -296,7 +273,7 @@ def load_h5_group(hdf5, group_name):
     return df
 
 
-def get_image_hashes(current_df, h5_path, verbose=True):
+def get_image_hashes(current_df, h5_path, recalculate=True, verbose=True):
     '''
     From a dataframe with image file-paths looks for an h5 file
     uses that to get image perceptual hashes, and compile a list of missing ones
@@ -311,30 +288,33 @@ def get_image_hashes(current_df, h5_path, verbose=True):
         current_hashes = h5_to_dict(h5_path)
     else:
         current_hashes = {}
-    current_hash_set = set(current_hashes.keys())
-    all_images_set = set(current_df['File_Path'])
-    missing_hashes = all_images_set - current_hash_set
-    filtered_df = current_df[current_df['File_Path'].isin(missing_hashes)]
-    missing_dict = dict(zip(filtered_df["File_Path"], 
-                      zip(filtered_df["x_min"], 
-                          filtered_df["y_min"], 
-                          filtered_df["Width"], 
-                          filtered_df["Height"])))
-
-    results = dict(
-    Parallel(n_jobs=4)(
-            delayed(lambda k, v: (k, hash_image(k, v)))(key, val)
-            for key, val in tqdm(missing_dict.items(), desc='Creating hashes for images not matching existing filepaths')
-            )
-        )
     
-    new_hashes_dict = {k: h for k, h in tqdm(results.items(),
-                        desc='Removing failed hashes') if h is not None
-                      } #remove any that failed to load
+    if recalculate or current_hashes == {}:
+        current_hash_set = set(current_hashes.keys())
+        all_images_set = set(current_df['File_Path'])
+        missing_hashes = all_images_set - current_hash_set
+        filtered_df = current_df[current_df['File_Path'].isin(missing_hashes)]
+        missing_dict = dict(zip(filtered_df["File_Path"], 
+                        zip(filtered_df["x_min"], 
+                            filtered_df["y_min"], 
+                            filtered_df["Width"], 
+                            filtered_df["Height"])))
 
-    all_hashes = current_hashes | new_hashes_dict
-    dict_to_h5(all_hashes, h5_path)
-    return all_hashes  
+        results = dict(
+        Parallel(n_jobs=4)(
+                delayed(lambda k, v: (k, hash_image(k, v)))(key, val)
+                for key, val in tqdm(missing_dict.items(), desc='Creating hashes for images not matching existing filepaths')
+                )
+            )
+        
+        new_hashes_dict = {k: h for k, h in tqdm(results.items(),
+                            desc='Removing failed hashes') if h is not None
+                        } #remove any that failed to load
+
+        current_hashes = current_hashes | new_hashes_dict
+        dict_to_h5(all_hashes, h5_path)
+    
+    return current_hashes  
 
 
 class CustomModel_old(pl.LightningModule):
@@ -494,10 +474,12 @@ def remove_duplicates_by_hash(df,
                               min_distance=50,
                               recalculate=True,
                               verbose=False):
-    hash_dict = get_image_hashes(df, h5_path, verbose=verbose)
+    
     '''Generate perceptual image hashes based on crops of the image from 
        object detector bounding boxes.  Using thise hashes to filter out 
        one of any pair for which the hash value is below some threshold'''
+    
+    hash_dict = get_image_hashes(df, h5_path, recalculate=recalculate, verbose=verbose)
 
     df = df[df["File_Path"].isin(hash_dict.keys())]
 

@@ -232,6 +232,39 @@ class HoverButton(QPushButton):
         self.click_handler = handler
 
 
+def find_model_paths(base_dir: Path):
+    models_dir = base_dir / "Models"
+
+    # 1. Find latest *.yaml settings file in Models/Exp_*/Exp_*_Run_*.yaml
+    yaml_files = sorted(
+        models_dir.glob("Exp_*/Exp_*_Run_*.yaml"),
+        key=lambda x: x.stat().st_mtime,
+        reverse=True
+    )
+    settings_pth = yaml_files[0] if yaml_files else None
+
+    # 2. Find latest *_best_weights.pt in Models/Exp_*/Exp_*_Run_*_best_weights.pt
+    weight_files = sorted(
+        models_dir.glob("Exp_*/Exp_*_Run_*_best_weights.pt"),
+        key=lambda x: x.stat().st_mtime,
+        reverse=True
+    )
+    weights_pth = weight_files[0] if weight_files else None
+
+    # 3. Find any .pt file directly under Models/ (excluding subdirectories)
+    detector_files = sorted(
+        models_dir.glob("*.pt"),
+        key=lambda x: x.stat().st_mtime,
+        reverse=True
+    )
+    detector_weights_pth = detector_files[0] if detector_files else None
+
+    return {
+        "settings_pth": settings_pth,
+        "weights_pth": weights_pth,
+        "detector_weights_pth": detector_weights_pth,
+    }
+
 class MainWindow(QMainWindow):
     def __init__(self, parent_folder):
         super().__init__()
@@ -478,6 +511,8 @@ class MainWindow(QMainWindow):
         #self.special_animal_dropdown.addItems(["All", "rats", 'mice']) # + self.class_names[self.naming_schemes[selected_index]]))
 
 
+
+
     def run_program(self):
         if __name__ == "__main__":
             input_folder = self.input_path.text()
@@ -497,13 +532,15 @@ class MainWindow(QMainWindow):
             if not os.path.isdir(output_folder):
                 msg = QMessageBox.critical(self, "Nearly there", "The output folder path is not a valid directory, please chose another location.")
                 return
+            
+            model_paths = find_model_paths(self.parent_folder)
 
             arguments = {
                     'project_dir': self.parent_folder,
                     'image_dir': input_folder,
-                    'settings_pth': self.parent_folder / 'Models/Exp_46/Exp_46_Run_21.yaml',
-                    'weights_pth': self.parent_folder / 'Models/Exp_46/Exp_46_Run_21_best_weights.pt',
-                    'detector_weights_pth': self.parent_folder / 'Models/md_v5a.0.0.pt',
+                    'settings_pth': model_paths['settings_pth'],
+                    'weights_pth': model_paths['weights_pth'],
+                    'detector_weights_pth': model_paths['detector_weights_pth'],
                     'md_empty_threshold': 0.15,
                     'classify_conf_threshold': threshold,
                     'predictions_dir': output_folder,
