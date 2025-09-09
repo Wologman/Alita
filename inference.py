@@ -27,8 +27,6 @@ from tqdm import tqdm
 import yaml
 from typing import Optional, Tuple, List, Literal, Dict
 from dataclasses import dataclass
-import re
-from process_video import decompress_path
 
 #ML & Pytorch
 import torch
@@ -173,9 +171,10 @@ class Paths:
         self.out_detailed_csv_path = self.preds_dir /  f'{self.EXP_NAME}_{self.RUN_ID}_full{self.PREDS_CSV_SUFFIX_OUT}'
         
         if weights_pth:
+            #access relative to the best_weights.pt  file
             self.class_names_pth = self.weights_pth.parent / f'{self.EXP_NAME}_{self.RUN_ID}_class_names.json'
         else:
-            self.class_names_pth = self.project_dir / _default_preds_dir / f'{self.RUN_ID}{self.CLASS_NAMES}'
+            self.class_names_pth = self.project_dir / _default_preds_dir / f'{self.EXP_NAME}_{self.RUN_ID}{self.CLASS_NAMES}'
 
         check_weights('classifier', self.weights_pth, load=True)
         check_weights('MegaDetector', Path(self.detector_weights))
@@ -378,19 +377,37 @@ class PredatorDataset(Dataset):
 
     def __len__(self):
         return len(self.df)
+     
 
-        
     def load_image(self, image_path, mode):
         try:
             image_path = Path(image_path)  # Ensure it's a Path object
-            with image_path.open('rb') as in_file:
-                jpeg_buf = in_file.read()
-                date_time = get_exif_dt(jpeg_buf, self.dt_formats)
+            image = None
+            jpeg_buf = None
 
-            # Use imdecode to support Unicode paths on Windows + PyInstaller
-            file_bytes = np.frombuffer(jpeg_buf, dtype=np.uint8)
-            image = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+            # Attempt fast path first
+            try:
+                image = cv2.imread(str(image_path), cv2.IMREAD_COLOR)
+            except Exception:
+                print('cf2.imread failed')
+                image = None
 
+            # If imread fails or returns None, fallback to imdecode
+            if image is None:
+                with image_path.open('rb') as in_file:
+                    jpeg_buf = in_file.read()
+                file_bytes = np.frombuffer(jpeg_buf, dtype=np.uint8)
+                image = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+
+            # If we didn't already load bytes (e.g., imread succeeded), read for EXIF
+            if jpeg_buf is None:
+                with image_path.open('rb') as in_file:
+                    jpeg_buf = in_file.read()
+
+            # Extract EXIF datetime
+            date_time = get_exif_dt(jpeg_buf, self.dt_formats)
+
+            # Convert BGR to RGB if requested
             if image is not None and mode == 'RGB':
                 image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
@@ -647,7 +664,7 @@ class CustomModel(pl.LightningModule):
 def get_model(weights, num_classes, model_name='efficientnetv2_l_21k', head_name='ClassifierHead'):
     print(f'The path to the weights file is {weights}')
     print(f'The model name is {model_name}')
-    print(f'The classfier head name is {head_name}')
+    #print(f'The classfier head name is {head_name}')
     saved_state_dict = torch.load(weights)
     model = CustomModel(num_classes, model_name, head_name=head_name)
     model.load_state_dict(saved_state_dict)
@@ -655,8 +672,17 @@ def get_model(weights, num_classes, model_name='efficientnetv2_l_21k', head_name
     return model
 
 
+#def in_notebook():
+# I don't seem to be using this, but it may have been my attempt to remove progress bars from the notebook
+#    try:
+#        from IPython import get_ipython
+#
+#        return get_ipython().__class__.__name__ == 'ZMQInteractiveShell'
+#    except:
+#        return False
+
+
 def infer_dataset(loader, model, class_list, device, activation='Sigmoid', verbose=True):
-    
     num_samples = len(loader.dataset)
     print(Colour.S + f'There are {num_samples} images in the dataloader for inference.' + Colour.E)
     
@@ -693,8 +719,8 @@ def infer_dataset(loader, model, class_list, device, activation='Sigmoid', verbo
             paths_list.extend(list(paths))
             crops_list.extend(list(ltrb_dims))
             dt_list.extend(d_times)
-            del images, logits, probs, cpu_probs
-            torch.cuda.empty_cache()
+            #del images, logits, probs, cpu_probs
+            #torch.cuda.empty_cache()
     except TypeError as e:
         print(f"Error: {e}")
         print('Fatal error: No valid images were found for inference')
@@ -793,6 +819,7 @@ def collate_encounters_per_folder(df: pd.DataFrame,
                 'x_min', 'y_min', 'Width', 'Height', 'Confidence', 'max_confidence']
     new_columns_order = first_cols + [col for col in df.columns if col not in first_cols]
     df = df[new_columns_order]
+
     return df
 
 
@@ -821,32 +848,46 @@ def agg_rows_by_mean(df):
     agg_df['Third_Pred'] = agg_df[prob_scores].apply(lambda row: row.nlargest(3).index[-1], axis=1)
     return agg_df
 
+def get_vid_path(group):
+    parent_dir = group['parent_dir'].iloc[0]
+    with open(Path(parent_dir) / "frame_mapping.json", 'r', encoding='utf-8') as f:
+        mapping = json.load(f)
+    return mapping[0][0]  # the video path
 
-def map_video_paths_by_parent(df: pd.DataFrame, mapping_filename: str = "frame_mapping.json") -> pd.DataFrame:
+
+
+def map_video_paths_by_parent(df: pd.DataFrame,
+                              mapping_filename: str = "frame_mapping.json") -> pd.DataFrame:
     """
     Adds a 'vid_path' column to the DataFrame by reverse-mapping image filenames to video paths,
     using the mapping file in each parent directory.
     """
 
+    def get_reverse_map(mapping_path: Path):
+        with open(mapping_path, 'r', encoding='utf-8') as f:
+            mapping = json.load(f)
+        # mapping is a list of [video_path, frame_name]
+        return {frame: video for video, frame in mapping}
+
     def apply_mapping(group: pd.DataFrame) -> pd.Series:
         mapping_path = Path(group['parent_dir'].iloc[0]) / mapping_filename
         if not mapping_path.exists():
             raise FileNotFoundError(f"Mapping file not found: {mapping_path}")
+        reverse_map = get_reverse_map(mapping_path)
 
-        with open(mapping_path, 'r', encoding='utf-8') as f:
-            mapping = json.load(f)
+        return  pd.Series(
+                [reverse_map.get(Path(str(p)).name, None) for p in group.index],
+                index=group.index)
 
-        # mapping is a list of [video_path, frame_name]
-        reverse_map = {frame: video for video, frame in mapping}
+    df = df.copy()   
+    if df['parent_dir'].nunique() > 1:
+        df['vid_path'] = df.groupby('parent_dir', group_keys=False).apply(apply_mapping)
+    else:
+        mapping_path = Path(df['parent_dir'].iloc[0]) / mapping_filename
+        reverse_map = get_reverse_map(mapping_path)
+        mapped = [reverse_map.get(Path(str(p)).name, None) for p in df.index]
+        df['vid_path'] = mapped
 
-        # Extract frame filename from the index, then map
-        return pd.Series(
-            [reverse_map.get(Path(str(p)).name, None) for p in group.index],
-            index=group.index
-        )
-
-    df = df.copy()
-    df['vid_path'] = df.groupby('parent_dir', group_keys=False).apply(apply_mapping)
     return df
 
 
@@ -863,6 +904,7 @@ def collate_video(df: pd.DataFrame,
     df['grandparent'] = [Path(index_value).parent.parent for index_value in df.index]  #grandparent folder
     grandparents = df['grandparent'].unique().tolist()
     df = df.drop(['grandparent'], axis=1)
+
     df = map_video_paths_by_parent(df)
 
     if use_mean_scores:
@@ -928,7 +970,7 @@ def relabel_empties(df: pd.DataFrame,
                     md_empty_threshold: float = 0.15, 
                     preds_empty_threshold: float = 0.5,
                     hard_classes: list[str] = [],
-                    empty_string: str = 'Empty'):
+                    empty_string: str = 'empty'):
     """Decide with what to do with images where both MD and the classifier produce low scores"""
     
     df['File_Path'] = df.index
@@ -950,7 +992,7 @@ def relabel_empties(df: pd.DataFrame,
 def relabel_unknowns(df: pd.DataFrame, 
                      md_empty_threshold: float = 0.15, 
                      preds_empty_threshold: float = 0.5,
-                     unknown_string: str = 'Unknown'):
+                     unknown_string: str = 'unknown'):
     """Decide with what to do with images where MD score is high, but classifier is low"""
     
     df['File_Path'] = df.index
@@ -970,8 +1012,8 @@ def make_results_table(results_dict: dict,
                        md_empty_threshold: float = 0.15,
                        empty_classify_threshold: float = 0.5, #If nothing over this, we predict 'unknown if md_empty is met'
                        hard_classes: List = [],
-                       empty_string: str = 'Empty',
-                       unknown_string: str = 'Unknown',
+                       empty_string: str = 'empty',
+                       unknown_string: str = 'unknown',
                        use_mean_video_preds: bool = False,
                        verbose: bool = True):
     """Join all the predictions and targets, and assemble into the final table for saving and analysis
@@ -1041,6 +1083,7 @@ def make_results_table(results_dict: dict,
         results_df = collate_encounters(results_df, time_window=time_window)
 
     if not videos_df.empty:
+        
         videos_df = collate_video(videos_df,
                                   threshold = md_empty_threshold,
                                   use_mean_scores=use_mean_video_preds) #Collates all the video frames from each video clip into a single 'Image' line
@@ -1060,7 +1103,7 @@ def make_results_table(results_dict: dict,
     #This isn't quite right.  We need the max confidence here, much like the max-prob
     unknown_mask = ((results_df['max_confidence']  > md_empty_threshold) 
                     & (results_df['Max_Prob'] < empty_classify_threshold))
-    results_df.loc[unknown_mask, 'Encounter'] = 'Unknown'
+    results_df.loc[unknown_mask, 'Encounter'] = 'unknown'
     results_df = results_df.drop(columns='max_confidence')
 
     # Finally change the encounter names for situations where the class name got into it. 
@@ -1206,7 +1249,7 @@ def predict_images(project_dir: Path,
                    num_workers: int = 0,
                    special_interest_classes: List=[str],
                    use_mean_video_preds: bool = False,
-                   verbose=True):
+                   verbose=False):
     warnings.filterwarnings("ignore", category=UserWarning, message="Corrupt JPEG data")
     
     infer_cfg, image_cfg = get_settings(settings_pth, num_workers=num_workers)
@@ -1223,9 +1266,8 @@ def predict_images(project_dir: Path,
     if check_for_empty(paths.image_dir):
         return pd.DataFrame(), 0
 
-    device, gpu = 'cpu', False if cpu_only else test_cuda(mem_threshold_gb=1.8)
-    
-    #if __name__ == "__main__":
+    device, gpu = ('cpu', False) if cpu_only else test_cuda(mem_threshold_gb=1.8)
+
     process_video.main(root_dir_pth=paths.image_dir, time_interval=0.5, verbose=verbose)
       
     species_list = data_from_json(paths.class_names_pth)
@@ -1257,7 +1299,10 @@ def predict_images(project_dir: Path,
                              batch_size=infer_cfg.BATCH_SIZE,
                              collate_fn=custom_collate,
                              shuffle=False,
-                             num_workers=infer_cfg.num_workers)
+                             num_workers=infer_cfg.num_workers,
+                             pin_memory=True,
+                             persistent_workers=True)
+
       
     model = get_model(paths.weights_pth, len(species_list), infer_cfg.MODEL_NAME, head_name=infer_cfg.HEAD_NAME)
     
@@ -1337,10 +1382,13 @@ if __name__ == '__main__':
     #images =   str(project_dir / 'data/Cats')
     #images = "C:/Users/ollyp/OneDrive/Desktop/empty_folder"
     images = str(project_dir / "data/vids_small")
+    #images = str(project_dir / "data/eat_my_shorts")
+    #images = "/home/olly/Desktop/Alita/data/practice_dataset_small"
+    #images = "/home/olly/Desktop/small_folder_of_images_no_special_characters"
     #results_path = "C:/Users/ollyp/OneDrive/Desktop"
     results_path =  "/home/olly/Desktop"  
-    settings = str(project_dir / 'models/Exp_46/Exp_46_Run_21.yaml')
-    classify_weights = str(project_dir / 'models/Exp_46/Exp_46_Run_21_best_weights.pt')
+    settings = str(project_dir / 'models/Exp_53/Exp_53_run_02.yaml')
+    classify_weights = str(project_dir / 'models/Exp_53/Exp_53_run_02_best_weights.pt')
     detector_weights = str(project_dir / 'models/md_v5a.0.0.pt')
     md_empty_threshold = 0.15
     classify_threshold = 0.5
@@ -1369,7 +1417,7 @@ if __name__ == '__main__':
                                    classify_conf_threshold=classify_threshold,
                                    naming_scheme='Common',
                                    cpu_only = False,
-                                   num_workers = 2,
+                                   num_workers = 4,
                                    special_interest_classes = special_animals,
                                    use_mean_video_preds=False,
                                    verbose=True,

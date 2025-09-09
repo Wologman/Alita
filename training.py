@@ -860,7 +860,9 @@ def get_dataloaders(df_train,
                     sample_weights=None,
                     num_workers=0,
                     batch_size=64,
-                    epoch_length=1000000):
+                    epoch_length=1000000,
+                    force_shuffle=False, #forces the val loader to randomise selection for display purposes
+                    ):
     edge_fade = img_cfg.EDGE_FADE
     min_margin = img_cfg.MIN_FADE_MARGIN
     max_margin = img_cfg.MAX_FADE_MARGIN
@@ -884,9 +886,16 @@ def get_dataloaders(df_train,
                               sampler=sampler,
                               num_workers=num_workers)
     else:
-        dl_train = DataLoader(ds_train, batch_size=batch_size, persistent_workers=p_workers,
-                              shuffle=True, num_workers=num_workers, pin_memory=True)
-    dl_val = DataLoader(ds_val, batch_size=batch_size, num_workers = num_workers)
+        dl_train = DataLoader(ds_train,
+                              batch_size=batch_size,
+                              persistent_workers=p_workers,
+                              shuffle=True,
+                              num_workers=num_workers,
+                              pin_memory=True)
+    dl_val = DataLoader(ds_val,
+                        batch_size=batch_size,
+                        shuffle=force_shuffle,
+                        num_workers = num_workers)
     return dl_train, dl_val, ds_train, ds_val
 
 

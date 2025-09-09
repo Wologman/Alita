@@ -265,6 +265,7 @@ def find_model_paths(base_dir: Path):
         "detector_weights_pth": detector_weights_pth,
     }
 
+
 class MainWindow(QMainWindow):
     def __init__(self, parent_folder):
         super().__init__()
@@ -273,9 +274,9 @@ class MainWindow(QMainWindow):
         self.setObjectName("main_window")
         
         self.parent_folder = parent_folder
-        self.resources = self.parent_folder / 'Resources'
+        self.resources = self.parent_folder / 'resources'
         self.start_dir = get_default_dialog_dir()
-        image_folder = self.resources / 'Images'
+        image_folder = self.resources / 'images'
         class_names_csv = self.resources / 'name_map_edited.csv'
         df = pd.read_csv(class_names_csv, header=None)
         self.naming_schemes = list(df.iloc[0].astype(str))[1:]
@@ -311,7 +312,7 @@ class MainWindow(QMainWindow):
         self.info_label = QLabel("Wildlife identification from camera trap images")
         self.info_label.setObjectName("info_label")
 
-        source_1 = HoverLabel("Version 3.0 | April 2025 | ", "Documentation", "https://wekaresearch-my.sharepoint.com/:f:/p/olly/Ev_QTLzbr_pDsxJRhluRxLABH38e6ZBRO4Ig9IyBbNwG2g?e=bjrpNM")  
+        source_1 = HoverLabel("Version 3.03 | August 2025 | ", "Documentation", "https://wekaresearch-my.sharepoint.com/:f:/p/olly/Ev_QTLzbr_pDsxJRhluRxLABH38e6ZBRO4Ig9IyBbNwG2g?e=bjrpNM")  
         source_2 = HoverLabel("|", "Source Code", "https://github.com/Wologman/Alita")
         
         self.sources_layout = QHBoxLayout()
@@ -338,7 +339,7 @@ class MainWindow(QMainWindow):
         self.output_button = HoverButton("Browse for folder")
         self.output_button.clicked.connect(self.select_output_file)
 
-        _thresholds_list = ['0.3', '0.4', '0.5', '0.6', '0.7', '0.8', '0.9']
+        _thresholds_list = ['0.2', '0.3', '0.4', '0.5', '0.6', '0.7', '0.8', '0.9']
 
         self.threshold_label = QLabel("Classification Threshold")
         self.threshold_help_button = QPushButton('?')
@@ -587,8 +588,8 @@ if __name__ == "__main__":
 
     root = get_project_root()
     print(f"Project root is: {root}")
-    css_path = root / 'Resources/alita_gui_styles.css'
-    QDir.addSearchPath('images', str(root / 'Resources/Images'))
+    css_path = root / 'resources/alita_gui_styles.css'
+    QDir.addSearchPath('images', str(root / 'resources/images'))
 
     app = QApplication(sys.argv)
     with open(css_path, 'r') as file:

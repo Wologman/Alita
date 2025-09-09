@@ -312,7 +312,7 @@ def get_image_hashes(current_df, h5_path, recalculate=True, verbose=True):
                         } #remove any that failed to load
 
         current_hashes = current_hashes | new_hashes_dict
-        dict_to_h5(all_hashes, h5_path)
+        dict_to_h5(current_hashes, h5_path)
     
     return current_hashes  
 

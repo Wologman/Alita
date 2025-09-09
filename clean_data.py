@@ -19,13 +19,11 @@ class DefaultConfig:
         self.EXPERIMENT_NAME = 'Exp_40'
         #self.SOURCE_IMAGES_PTH = 'Z:\\alternative_footage\\CLEANED'
         self.CLASSES = [] #leave empty, will populate from folder names
-        self.CLASSES_TO_EXCLUDE = ['shag', 'moth', 'swallow', 'grey_faced_petrol', 'fluttering_shearwater', 'whitehead', 'skink', 'lizard', 
-                                   'fernberd', 'skylark', 'grey_duck', 'long_tailed_cuckoo', 'spotted_dove', 'nz_falcon', 'mohua', 'kingfisher',
-                                   'fiordland_crested_penguin', 'stilt', 'rosella', 'swan', 'grey_warbler ']
+        self.CLASSES_TO_EXCLUDE = ['shag', 'bat', 'moth', 'skink', 'lizard',  'skylark', 'grey_duck', 'empty', 'campbell_island_teal'] 
         self.CLASS_JOINS = {'lizard':['skink', 'lizard'], 'finch':['greenfinch', 'goldfinnch', 'chaffinch'], 'quail':['quail_california', 'quail_brown']}
         self.CLASS_NAME_CHANGE = {'penguin':'little_blue_penguin', 'song thrush':'thrush', 'NZ_falcon':'nz_falcon'}
         self.LOCATIONS_TO_EXCLUDE = []
-        self.LOCATIONS_FOR_TEST_ONLY =  ['N01', 'BWS', 'EBF', 'EM1', 'ES1']
+        self.LOCATIONS_FOR_TEST_ONLY =  ['N01', 'BWS', 'EBF', 'EM1', 'ES1'] + ['EL1', 'ES1', 'N02', 'N04', 'N06', 'N08', 'OTR', 'WRO']
         self.MD_THRESHOLD_TO_TRAIN_WITH = 0.5
         self.LOW_CONF = []
 
@@ -34,7 +32,7 @@ class DefaultConfig:
         self.MAX_PER_CLASS_PER_CAMERA = 200 #Maximum images from a particular animal category, from a given camera
         self.MAX_PER_CLASS_PER_LOCATION = 3000
         self.prioritising_methods = ['remove_duplicates_by_hash',  'embedding_limit_cam', 'embedding_limit_location'] 
-        self.rehash_if_new_images = False
+        self.rehash_if_new_images = True
 
     #[
     #'remove_duplicates_by_hash',
@@ -88,6 +86,7 @@ class ImageConfig:
 
 
 def get_config(settings_pth: str):
+    #This seems unreliable,  it wasn't updating the locations_to_exclude
     """Gets an instance of the config class, then looks for the settings file, if it finds one evaluates specific strings to python expressions"""
     evaluate_list = ['CLASSES', 'CLASSES_TO_EXCLUDE', 'CLASS_JOINS', 'CLASS_NAME_CHANGE', 
                      'LOCATIONS_TO_EXCLUDE', 'LOCATIONS_FOR_TEST_ONLY', 'LOW_CONF','MIN_HASH_DIFFERENCE',
@@ -139,15 +138,17 @@ def main(settings_pth = None):
     #Remove unwanted datasets or classes
     df = df[~(df['Location'].isin(cfg.LOCATIONS_TO_EXCLUDE))]
     n_classes_2 = df['Species'].nunique() - (n_unknown!=0)
-    print(f'{n_classes-n_classes_2} classes were deliberatly excluded')
+    print(f"The unique classes after removing unwanted locations are {df['Species'].unique()}")
     df = df[~(df['Species'].isin(cfg.CLASSES_TO_EXCLUDE))]
     print(f'{len(df)} lines left after removing unwanted locations and classes')
+    print(f"The unique classes after removing unwanted classes are {df['Species'].unique()}")
 
     #Fix class names
     for key, value in cfg.CLASS_NAME_CHANGE.items():
         df.replace(key, value, inplace=True)
     n_classes_3 = df['Species'].nunique() - (n_unknown!=0)
     print(f'{n_classes_2- n_classes_3} unique classes removed by name changes')
+    print(f"The unique classes after name changes are {df['Species'].unique()}")
 
     #Remove low scoring MD predictions, but not the ones from the LOW_CONF list
     df = df[(df['Confidence'] >= cfg.MD_THRESHOLD_TO_TRAIN_WITH) | (df['Species'].isin(cfg.LOW_CONF))]
@@ -170,7 +171,10 @@ def main(settings_pth = None):
             print("Length of hash dataset is:", length)
             print('Not recalculating hash pairs as the revious hashing included all images')
 
+    
+
     if 'remove_duplicates_by_hash' in cfg.prioritising_methods:
+        print(f"The unique classes before removal by hash are {df['Species'].unique()}")
         df, duplicate_pairs = remove_duplicates_by_hash(df,
                                                 h5_path=paths.hash_path,
                                                 hash_dist_h5_path = paths.hash_pair_dist,
@@ -179,7 +183,7 @@ def main(settings_pth = None):
                                                 recalculate=recalculate,
                                                 verbose=True,
                                                 )
-
+        print(f"The unique classes after removal by hash are {df['Species'].unique()}")
 
     if 'bbox_limit_location' in cfg.prioritising_methods:
         df = limit_with_bbox_vals(df,
@@ -202,6 +206,8 @@ def main(settings_pth = None):
                                    img_cfg=img_cfg,
                                    limit=cfg.MAX_PER_CLASS_PER_CAMERA)
         print(f'{len(df)} lines left after limiting to {cfg.MAX_PER_CLASS_PER_CAMERA} images per class-camera')
+    
+    print(f"The unique classes after removal by camera-embedding are {df['Species'].unique()}")
     if 'embedding_limit_location' in cfg.prioritising_methods:
         df = limit_with_embeddings(df,
                                    h5_path=paths.embedding_path,
@@ -209,12 +215,13 @@ def main(settings_pth = None):
                                    img_cfg=img_cfg,
                                    limit=cfg.MAX_PER_CLASS_PER_LOCATION)
         print(f'{len(df)} lines left after limiting to {cfg.MAX_PER_CLASS_PER_LOCATION} images per class-location')
-
+        print(f"The unique classes after removal by location-embedding are {df['Species'].unique()}")
     df = df.drop('Date_Time_Object', axis=1)
     df.to_parquet(paths.out_pth)
     print(f'{len(df)} rows written to the cleaned parquet file')
     n_classes = df['Species'].nunique() - (n_unknown!=0)
     print(f'{n_classes} final unique species were left (not counting [unknown] class)')
+    print(f"The final classes immediately after cleaning steps are: {df['Species'].unique()}")
     print(f'The crop annotation file for training saved to {paths.out_pth}')
 
     num_rows = len(df)
