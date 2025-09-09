@@ -14,8 +14,8 @@ Under the hood, there are two main stages to the process.  The first is an anima
 The second stage is a pure classification step, that takes only the highest probability bounding box, and crops its own a box of 480x480 pixels around the centroid.  This crop is passed through a second neural network.  This network predicts the presence or absence of 77 species independently.  They are treated as 'multi-label' predictions, and do not sum to 1.
 
 The possible outcomes are:
-* Any of 77 animals,  all the prediction scores are provided in the CSV.
-* Any of 77 animals, from the maximum score of all images taken within 30 seconds of each other.  This prediction is labelled an 'encounter'.
+* Any of 81 animals,  all the prediction scores are provided in the CSV.
+* Any of 81 animals, from the maximum score of all images taken within 30 seconds of each other.  This prediction is labelled an 'encounter'.
 * OR  'Empty',  where **Both** models were below thresholds their preset thresholds.  
 * OR  'Unknown', where the detection model predicted an animal witha score over 0.15, but the classifier provided no scores over the classifier threshold (selectable by the user in the GUI).
 
@@ -56,8 +56,9 @@ If your goal is to monitor relative change in populations, then you should use a
 
 ## Acknowledgements
 *  Joris Tinnemans, for his tireless energy getting this work started, and coordinating the dataset curation and processing. 
-*  Jan Hewton and Jane Stevens, who between them manually checked most of our database of more than 2.5 million images.
+*  Jan Hewton and Jane Stevens, who between them manually checked most of our database of more than 3 million images.
 *  A long list of parties that supplied additional datasets, including those on [Lila Science](https://lila.science/).
 *  All our volunteers and rangers who collected images from more than 30 regions in New Zealand.
 *  Dan Morris and his team, for his work producing and maintaining the MegaDetector.
 *  The folks in the Threats Science and NPCP teams at DOC for their encouragement and support.
+
