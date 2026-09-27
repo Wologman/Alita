@@ -1,6 +1,6 @@
 # Alita v3.03
 
-**If you simply want to download and run the inference code on a Windows computer then the deployment code along with all the model weights is linked from my pCloud drive [here]([https://wekaresearch.com](https://filedn.eu/l1723vRFnsquJMoK85UThX0/Alita_Windows_App/))**
+**If you simply want to download and run the inference code on a Windows computer then the deployment code along with all the model weights is [abailable from my pCloud drive](https://filedn.eu/l1723vRFnsquJMoK85UThX0/Alita_Windows_App/)**
 
 ## About Alita
 
