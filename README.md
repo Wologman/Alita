@@ -15,13 +15,26 @@ You can work directly with those prediction scores, or use the provided post-pro
 * OR  'Empty',  where **Both** models were below thresholds their preset thresholds.  
 * OR  'Unknown', where the detection model predicted an animal witha score over 0.15, but the classifier provided no scores over the classifier threshold (selectable by the user in the GUI).
 
-The model is imperfect, and will certainly contain bias.  If used carefully it should be orders of magnitude faster than manually checking images, for only a small loss in accuracy.  Typically one class score will be over 0.9 and the rest very small.  However the perfomance can vary with location and camera setup.  Some classes are more easily confused than others (for example cats & possums in the dark can look similar from some angles).
+The raw model scores will certainly contain systematic bias, and the distribution between true positive scores and true negatives will overlap, meaning no mater where you put a binary threshold, there will be some false positives and false neagatives.  If used carefully it should be orders of magnitude faster than manually checking images, for only a small loss in accuracy.  Typically one class score will be over 0.9 and the rest very small.  However the perfomance can vary with location and camera setup.  Some classes are more easily confused than others (for example cats & possums in the dark can look similar from some angles).
 
 If your goal is to locate a specific specific but sparce species.  For example you are trying to hunt down every last rat in an island sanctuary, then you can chose a relatively low classification threshold, like 0.3, and accept that you may have some false identifications that need manual checking.
 
-If your goal is to monitor relative change in populations, then some form of calibration and manual sampling & calibration is needed.  At a minimum you could set a relatively high threshold like 0.6 and go through the 'Unknown' predictions to investigate sources of error.  
+## Calibration
 
-To go a step further you could create your own independent test set by sub-sampling from your study population and calibrate the model against that.  For example you could use [Platt scaling](https://en.wikipedia.org/wiki/Platt_scaling) (fit a logistic regression model) for each class to transform the scores into a meaningful estimate of probability, before the agregation into an 'encounter'.  You could then do the same for competing models and compare the results.
+If your goal is to monitor relative change in populations, then some form of calibration against a random sample from your study population is essential, and it makes no sense to work directly with the 'encounter' prediction as this is based on comparison between raw (biased) scores.  Also it is far easier for this use case to work individually with each class and ignore relative predictions between classes for a given image, even though in principle this may result in the counter-intuitive result of a single image predicting more than one species.
+
+### Instance level scaling
+
+To improve interpretability, and make scores between different classes fairly comparable you could use  [Platt scaling](https://en.wikipedia.org/wiki/Platt_scaling) (fit a logistic regression model), with model predictions against ground truch for some pre-existing independent data.  If such data is unavailable  a *stratified random* sub-sample of your study data could be used, so long as you can label enough samples for each class of interest for a reasonable fit. This will also get the raw scores into something interpretable as an estimate of probability, ie. this is the probablity *p* of a stoat given a raw prediction score *f*.
+
+Note that if you do have historical data to work with, this step is very cheap computationaly.
+
+### Calibration for estimating total counts
+No amount of improvement at instance level, either with scaling or threshold adjustment will guarentee an un-biased prediction on aggregate, as there is no reason for the false postives and false negatives to be symmetrically distributed about their optimal threshold, for instance level prediction.  So for a statistically defendable prediction of some total (e.g. this study found this many stoats), you must take a random sub-sample of your data and either adjust thresholds (per-class),  or scale the results to directly match the total in the sub-sample.  For this step a simple single-parameter temperature-scaling transform for each class should be fine.  
+
+The advantage of temperature scaling rather than adjusting thresholds is that you can leave the threshold at 0.5 across all classes, and just sum up the 1s to get an estimate of the total if that is how you aggregateed when performing the scaling step.  So the scores remain interperatable as something close to probability.
+
+To go a step further and give an agregate prediction with an uncertainty, you could implement bootstrapping with your random sub-sample.
 
 ## Instructions for Use
 
