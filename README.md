@@ -20,21 +20,24 @@ The raw model scores will certainly contain systematic bias, and the distributio
 If your goal is to locate a specific specific but sparce species.  For example you are trying to hunt down every last rat in an island sanctuary, then you can chose a relatively low classification threshold, like 0.3, and accept that you may have some false identifications that need manual checking.
 
 ## Calibration
+The following argument applies to all deep learning camera trap models, not just Alita.
 
-If your goal is to monitor relative change in populations, then some form of calibration against a random sample from your study population is essential, and it makes no sense to work directly with the 'encounter' prediction as this is based on comparison between raw (biased) scores.  Also it is far easier for this use case to work individually with each class and ignore relative predictions between classes for a given image, even though in principle this may result in the counter-intuitive result of a single image predicting more than one species.
+If your goal is to monitor relative change in populations, then some form of calibration is essential, and it makes no sense to work directly with the 'encounter' prediction as this is based on comparison between raw (biased) scores.  Also, it is easier for this use case to work individually with each class and ignore relative predictions between classes for a given image, even though in principle this may result in the counter-intuitive result of a single image predicting more than one species.
 
 ### Instance level scaling
 
 To improve interpretability, and make scores between different classes fairly comparable you could use  [Platt scaling](https://en.wikipedia.org/wiki/Platt_scaling) (fit a logistic regression model), with model predictions against ground truch for some pre-existing independent data.  If such data is unavailable  a *stratified random* sub-sample of your study data could be used, so long as you can label enough samples for each class of interest for a reasonable fit. This will also get the raw scores into something interpretable as an estimate of probability, ie. this is the probablity *p* of a stoat given a raw prediction score *f*.
 
-Note that if you do have historical data to work with, this step is very cheap computationaly.
+Note that if you do have historical data to work with, this step is very cheap computationaly and requires no new human annotation time.
 
 ### Calibration for estimating total counts
-No amount of improvement at instance level, either with scaling or threshold adjustment will guarentee an un-biased prediction on aggregate, as there is no reason for the false postives and false negatives to be symmetrically distributed about their optimal threshold, for instance level prediction.  So for a statistically defendable prediction of some total (e.g. this study found this many stoats), you must take a random sub-sample of your data and either adjust thresholds (per-class),  or scale the results to directly match the total in the sub-sample.  For this step a simple single-parameter temperature-scaling transform for each class should be fine.  
+No amount of improvement at instance level, either with scaling or threshold adjustment will guarentee an un-biased prediction on aggregate, as there is no reason for the false postives and false negatives to be symmetrically distributed about their optimal instance level threshold.  For a statistically defendable prediction of some total (e.g. this study found this many stoats), you must take a random sub-sample of your data and either adjust thresholds (per-class),  or scale the results to directly match the total in the sub-sample.  
 
-The advantage of temperature scaling rather than adjusting thresholds is that you can leave the threshold at 0.5 across all classes, and just sum up the 1s to get an estimate of the total if that is how you aggregateed when performing the scaling step.  So the scores remain interperatable as something close to probability.
+For this step a simple single-parameter temperature-scaling transform for each class should be fine. The advantage of temperature scaling rather than adjusting thresholds is that you can leave the threshold at 0.5 across all classes, and just sum up the 1s to get an estimate of the total if that is how you aggregateed when performing the scaling step.  So the scores remain interperatable as something like probability.
 
-To go a step further and give an agregate prediction with an uncertainty, you could implement bootstrapping with your random sub-sample.
+To go a step further and give an agregate prediction with an uncertainty, you could implement bootstrapping with your random sub-sample.  
+
+Now you have a solid estimate of your total, plus an uncertainty, based on a small sub-sample of your actual study data, with the model applied to the rest.  In doing so you have corrected for both internal model bias, and effects of any unexpected unique behaviour that may be occuring with this particualar season/location/camera setup/species variant etc.
 
 ## Instructions for Use
 
