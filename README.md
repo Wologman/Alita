@@ -37,7 +37,7 @@ For this step a simple single-parameter temperature-scaling transform for each c
 
 To go a step further and give an agregate prediction with an uncertainty, you could implement bootstrapping with your random sub-sample.  
 
-Now you have a solid estimate of your total, plus an uncertainty, based on a small sub-sample of your actual study data, with the model applied to the rest.  In doing so you have corrected for both internal model bias, and effects of any unexpected localised behaviour that may be occuring with this particualar season/location/camera setup/species variant etc.  You could even correct for the use of the model on a completely different species, if you had a model class that was similar but not quite the same as the one in your study.
+Now you have a solid estimate of your total, plus an uncertainty, based on a small sub-sample of your actual study data, with the model applied to the rest.  In doing so you have corrected for both internal model bias, and effects of any unexpected localised behaviour that may be occuring with this particualar season/location/camera setup/species variant etc.  You could even try to correct for the use of the model on a completely different species, if you had a model class that was similar but not quite the same as the one in your study.
 
 ## Instructions for Use
 
