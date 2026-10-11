@@ -25,11 +25,11 @@ The following argument applies to all deep learning camera trap models, not just
 If your goal is to monitor **relative change** in populations, then some form of calibration is essential, and it makes no sense to work directly with the 'encounter' prediction as this is based on comparison between raw (biased) scores.  Also, it is easier for this use case to work individually with each class and ignore relative predictions between classes for a given image, even though in principle this may result in the counter-intuitive result of a single image predicting more than one species.
 
 ### Instance-level scaling
-For most use cases we are estimating relative change, so instance level scaling should be sufficient, that is turning the biased raw scores into an estimate of actual probability so scores from different classes can be fairly compared.  This also has the nice outcome of making the model predictions more interpretable.
+For most use cases we are estimating relative change, so instance level scaling should be sufficient so that the scaled scores from different classes can be fairly compared, and a single threshold used over all classes. 
 A good starting point is would be [Platt scaling](https://en.wikipedia.org/wiki/Platt_scaling) (fit a logistic regression model), with model predictions against ground truch for some pre-existing independent data.  
 
 ```P(y=1 | f) = 1 / (1 + exp(A·f + B))```
-where *f* is the raw score, *y* is the ground truth (0 or 1), A & B are the slope and offset coefficients.
+where *f* is the raw score, *y* is the ground truth (0 or 1), A & B are the slope and offset coefficients.   This also has the nice outcome of making the scaled model predictions interpretable as an estimate of probability.
 
 If such data is unavailable or is too different from your study data, a *stratified random* sub-sample of your study data could be used, so long as you can label enough samples for each class of interest for a reasonable fit.
 
@@ -39,7 +39,7 @@ Note that if you do have good historical data to work with, this step is very ch
 
 Suppose we require an absolute count for some reason, or need to estimate an uncertainty of that count.  For example we are trying to compare the sensitivity of two different camera setups, or even completely unrelated observation methods like cameras vs footprint tunnels.
 
-Imagine a histogram of the true positive scores and true negatives.  If we have already scaled as above for instance level predictions the optimal theshold should be 0.5, and the true negatives and true posives for the bin around that value should be nearly equal.  However the shapes of the distributions have no reason to be symmetrical.   Also it is entirely likely that our localised study images are subtly different in some unexpected way to those of the stored data used for the scaling.  For either of these reasons, the difference in area of the true postives and true negatives will be the error in the absolute count.
+Imagine a histogram of the true positive scores and true negatives.  If we have already scaled as above for instance level predictions the optimal theshold should be 0.5, and the true negatives and true posives for the bin at that value should be nearly equal.  However the shapes of the distributions have no reason to be symmetrical, meaning the area of false positives and false negatives, with the difference between them equal to the error in the absolute count.  Also it is entirely likely that our localised study images are subtly different in some unexpected way to those of the stored data used for the scaling, potentially adding to any asymmetry.
 
 To correct for the above error, we could take a random sub-sample of the study data, then iteratively apply a temperature scaling step, or adjust the threshold slightly until the error is zero for that sub-sample. The advantage of temperature scaling rather than threshold adjustment is that you can leave the final threshold at 0.5 across all classes, and just sum up the 1s to get an estimate of the total, if that is how you aggregateed when performing the scaling step.  So the scores remain interperatable as something like probability.
 
