@@ -19,6 +19,27 @@ The raw model scores will certainly contain systematic bias, and the distributio
 
 If your goal is to locate a specific specific but sparce species.  For example you are trying to hunt down every last rat in an island sanctuary, then you can chose a relatively low classification threshold, like 0.3, and accept that you may have some false identifications that need manual checking.
 
+
+## Instructions for use
+
+* The zipped folder should contain everything needed to run Alita on a Windows desktop.  Just download and unzip to any convenient location.
+
+* If you right-click on `launch_alita.exe` you could create a shortcut on your system tray or the start menu.
+
+* There is no installation required.  To remove the program simply delete the folder.
+
+* If your machine has an NVIDIA GPU, it is possible to use that for increased speed by selecting the check-box in the GUI.
+
+* Follow the various prompts to run the tool.   It will produce three files.
+    - `xxxx_full_predictions.csv`:  A CSV with prediction scores for all animals, the top-3 animals, bounding boxes, and a column named *Encounter* where the top animal from all the images within a short burst of images.
+    - `xxxx_predictions.csv`:   Only the *Encounter* and it's score.
+    - `alita_predictions.json`:  A file in the format required to visualise the results in [Timelapse](https://timelapse.ucalgary.ca/)
+
+*  If you are interested one particular species, you can select it from a dropdown box and an additional `.csv` and `.json` file will be produced with the prediction scores for that species only.  For example, if you select 'Weka'  everything is a Weka, but with varying scores.  You could then play with different threshold settings in [Timelapse](https://timelapse.ucalgary.ca/).
+
+* This was treated as a multi-label problem, the predictions are independent of each other and the scores do not necessarily sum to 1. In principle you could predict two species in the same image, though one of them would likely be wrong as this is very rare.
+
+
 ## Calibration
 The following argument applies to all deep learning camera trap models, not just Alita.
 
@@ -48,24 +69,6 @@ To go a step further and give an agregate prediction with an uncertainty, you co
 
 Now you have a solid estimate of your total, plus an uncertainty, based on a small sub-sample of your actual study data, with the model applied to the rest.  In doing so you have corrected for both internal model bias, and effects of any unexpected localised behaviour that may be occuring with this particualar season/location/camera setup/species variant etc.  You could even try to correct for the use of the model on a completely different species, if you had a model class that was very similar but not quite the same as the one in your study.
 
-## Instructions for use
-
-* The zipped folder should contain everything needed to run Alita on a Windows desktop.  Just download and unzip to any convenient location.
-
-* If you right-click on `launch_alita.exe` you could create a shortcut on your system tray or the start menu.
-
-* There is no installation required.  To remove the program simply delete the folder.
-
-* If your machine has an NVIDIA GPU, it is possible to use that for increased speed by selecting the check-box in the GUI.
-
-* Follow the various prompts to run the tool.   It will produce three files.
-    - `xxxx_full_predictions.csv`:  A CSV with prediction scores for all animals, the top-3 animals, bounding boxes, and a column named *Encounter* where the top animal from all the images within a short burst of images.
-    - `xxxx_predictions.csv`:   Only the *Encounter* and it's score.
-    - `alita_predictions.json`:  A file in the format required to visualise the results in [Timelapse](https://timelapse.ucalgary.ca/)
-
-*  If you are interested one particular species, you can select it from a dropdown box and an additional `.csv` and `.json` file will be produced with the prediction scores for that species only.  For example, if you select 'Weka'  everything is a Weka, but with varying scores.  You could then play with different threshold settings in [Timelapse](https://timelapse.ucalgary.ca/).
-
-* This was treated as a multi-label problem, the predictions are independent of each other and the scores do not necessarily sum to 1. In principle you could predict two species in the same image, though one of them would likely be wrong as this is very rare.
 
 ## The data
 
