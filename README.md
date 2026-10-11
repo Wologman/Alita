@@ -22,24 +22,32 @@ If your goal is to locate a specific specific but sparce species.  For example y
 ## Calibration
 The following argument applies to all deep learning camera trap models, not just Alita.
 
-If your goal is to monitor relative change in populations, then some form of calibration is essential, and it makes no sense to work directly with the 'encounter' prediction as this is based on comparison between raw (biased) scores.  Also, it is easier for this use case to work individually with each class and ignore relative predictions between classes for a given image, even though in principle this may result in the counter-intuitive result of a single image predicting more than one species.
+If your goal is to monitor **relative change** in populations, then some form of calibration is essential, and it makes no sense to work directly with the 'encounter' prediction as this is based on comparison between raw (biased) scores.  Also, it is easier for this use case to work individually with each class and ignore relative predictions between classes for a given image, even though in principle this may result in the counter-intuitive result of a single image predicting more than one species.
 
 ### Instance-level scaling
+For most use cases we are estimating relative change, so instance level scaling should be sufficient, that is turning the biased raw scores into an estimate of actual probability so scores from different classes can be fairly compared.  This also has the nice outcome of making the model predictions more interpretable.
+A good starting point is would be [Platt scaling](https://en.wikipedia.org/wiki/Platt_scaling) (fit a logistic regression model), with model predictions against ground truch for some pre-existing independent data.  
 
-To improve interpretability, and make scores between different classes fairly comparable you could use  [Platt scaling](https://en.wikipedia.org/wiki/Platt_scaling) (fit a logistic regression model), with model predictions against ground truch for some pre-existing independent data.  If such data is unavailable  a *stratified random* sub-sample of your study data could be used, so long as you can label enough samples for each class of interest for a reasonable fit. This will also get the raw scores into something interpretable as an estimate of probability, ie. this is the probablity *p* of a stoat given a raw prediction score *f*.
+```P(y=1 | f) = 1 / (1 + exp(A·f + B))```
+where *f* is the raw score, *y* is the ground truth (0 or 1), A & B are the slope and offset coefficients.
 
-Note that if you do have historical data to work with, this step is very cheap computationaly and requires no new human annotation time.
+If such data is unavailable or is too different from your study data, a *stratified random* sub-sample of your study data could be used, so long as you can label enough samples for each class of interest for a reasonable fit.
 
-### Calibration for estimating total counts
-Instance-level scaling helps in that it gets us closer to using the right thresholds but it can never guarentee an un-biased prediction on aggregate, as there is no reason for the false postives and false negatives to be symmetrically distributed about their optimal instance level threshold.  For a statistically defendable prediction of some total (e.g. this study found this many stoats), you must take a random sub-sample of your data and either adjust thresholds (per-class),  or scale the results to directly match the total in the sub-sample.  
+Note that if you do have good historical data to work with, this step is very cheap computationaly and requires no new human annotation time.  The calibration data can not come from DOC's publicly available training data from Lila.science, as Alita was trained on this.  At the time of the release of version 3.03 we did not have sufficient independent data to produce a useful collection of slope (A) and offset (B) coefficients, but this will hopefully be available with the next version.
 
-For this step a simple single-parameter temperature-scaling transform for each class should be fine. The advantage of temperature scaling rather than threshold adjustment is that you can leave the threshold at 0.5 across all classes, and just sum up the 1s to get an estimate of the total if that is how you aggregateed when performing the scaling step.  So the scores remain interperatable as something like probability.
+### Calibration for estimating absolute counts
+
+Suppose we require an absolute count for some reason, or need to estimate an uncertainty of that count.  For example we are trying to compare the sensitivity of two different camera setups, or even completely unrelated observation methods like cameras vs footprint tunnels.
+
+Imagine a histogram of the true positive scores and true negatives.  If we have already scaled as above for instance level predictions the optimal theshold should be 0.5, and the true negatives and true posives for the bin around that value should be nearly equal.  However the shapes of the distributions have no reason to be symmetrical.   Also it is entirely likely that our localised study images are subtly different in some unexpected way to those of the stored data used for the scaling.  For either of these reasons, the difference in area of the true postives and true negatives will be the error in the absolute count.
+
+To correct for the above error, we could take a random sub-sample of the study data, then iteratively apply a temperature scaling step, or adjust the threshold slightly until the error is zero for that sub-sample. The advantage of temperature scaling rather than threshold adjustment is that you can leave the final threshold at 0.5 across all classes, and just sum up the 1s to get an estimate of the total, if that is how you aggregateed when performing the scaling step.  So the scores remain interperatable as something like probability.
 
 To go a step further and give an agregate prediction with an uncertainty, you could implement bootstrapping with your random sub-sample.  
 
-Now you have a solid estimate of your total, plus an uncertainty, based on a small sub-sample of your actual study data, with the model applied to the rest.  In doing so you have corrected for both internal model bias, and effects of any unexpected localised behaviour that may be occuring with this particualar season/location/camera setup/species variant etc.  You could even try to correct for the use of the model on a completely different species, if you had a model class that was similar but not quite the same as the one in your study.
+Now you have a solid estimate of your total, plus an uncertainty, based on a small sub-sample of your actual study data, with the model applied to the rest.  In doing so you have corrected for both internal model bias, and effects of any unexpected localised behaviour that may be occuring with this particualar season/location/camera setup/species variant etc.  You could even try to correct for the use of the model on a completely different species, if you had a model class that was very similar but not quite the same as the one in your study.
 
-## Instructions for Use
+## Instructions for use
 
 * The zipped folder should contain everything needed to run Alita on a Windows desktop.  Just download and unzip to any convenient location.
 
@@ -58,7 +66,7 @@ Now you have a solid estimate of your total, plus an uncertainty, based on a sma
 
 * This was treated as a multi-label problem, the predictions are independent of each other and the scores do not necessarily sum to 1. In principle you could predict two species in the same image, though one of them would likely be wrong as this is very rare.
 
-## The Data
+## The data
 
 * The dataset used to make this model is available on [LILA BC](https://lila.science/).  It has come from a variety of sources, and has been collated by Joris Timmermans, with the awesome help of our two dedicated volunteers Jan and Jane.
 
