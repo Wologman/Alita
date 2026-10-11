@@ -25,13 +25,14 @@ The following argument applies to all deep learning camera trap models, not just
 If your goal is to monitor **relative change** in populations, then some form of calibration is essential, and it makes no sense to work directly with the 'encounter' prediction as this is based on comparison between raw (biased) scores.  Also, it is easier for this use case to work individually with each class and ignore relative predictions between classes for a given image, even though in principle this may result in the counter-intuitive result of a single image predicting more than one species.
 
 ### Instance-level scaling
-For most use cases we are estimating relative change, so instance level scaling should be sufficient so that the scaled scores from different classes can be fairly compared, and a single threshold used over all classes. 
+For most use cases we are estimating relative change, so instance level scaling should be sufficient so that the scaled scores from different classes can be fairly compared, and a single threshold used over all classes.  
+
 A good starting point is would be [Platt scaling](https://en.wikipedia.org/wiki/Platt_scaling) (fit a logistic regression model), with model predictions against ground truch for some pre-existing independent data.  
 
 ```P(y=1 | f) = 1 / (1 + exp(A·f + B))```
 where *f* is the raw score, *y* is the ground truth (0 or 1), A & B are the slope and offset coefficients.   This also has the nice outcome of making the scaled model predictions interpretable as an estimate of probability.
 
-If such data is unavailable or is too different from your study data, a *stratified random* sub-sample of your study data could be used, so long as you can label enough samples for each class of interest for a reasonable fit.
+If such data is unavailable or is too different from your study images, a *stratified random* sub-sample of your study data could be used, so long as you can label enough samples for each class of interest for a reasonable fit.
 
 Note that if you do have good historical data to work with, this step is very cheap computationaly and requires no new human annotation time.  The calibration data can not come from DOC's publicly available training data from Lila.science, as Alita was trained on this.  At the time of the release of version 3.03 we did not have sufficient independent data to produce a useful collection of slope (A) and offset (B) coefficients, but this will hopefully be available with the next version.
 
