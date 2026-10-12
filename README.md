@@ -60,7 +60,7 @@ Note that if you do have good historical data to work with, this step is very ch
 
 Suppose we require an absolute count for some reason, or need to estimate an uncertainty of that count.  For example we are trying to compare the sensitivity of two different camera setups, or even completely unrelated observation methods like cameras vs footprint tunnels, or build a long term record where running new models over the old data is impractical.
 
-Imagine a histogram of the true positive scores and true negatives.  If we have already scaled as above for instance level predictions the optimal theshold should be 0.5.  However the shapes of the distributions have no reason to be symmetrical, meaning the area of false positives and false negatives.  That difference in area is equal to the error in the absolute count.  
+Imagine a histogram of the true positive scores and true negatives.  If we have already scaled as above for instance level predictions the theshold should be on or near 0.5.  However the shapes of the distributions have no reason to be symmetrical, meaning the area of false positives and false negatives.  That difference in area is equal to the error in the absolute count.  
 
 Also it is entirely likely that our localised study images are subtly different in some unexpected way to those of the stored data used for the scaling, potentially adding to any asymmetry.  For example we're trying to count possums, but in a loction where there are many cats present.  This will affect the shape of the possum prediction score distribution, as possums and cats can look similar from some angles.
 
