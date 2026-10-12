@@ -76,7 +76,7 @@ Now you have a solid estimate of your total, plus an uncertainty, based on a sma
 
 *  The model was trained on only a subset of this data, to address class embalance, whilst retaining maximum feature diversity.  Olly intends to make public the methods and Python code he has been developing for this process.
 
-* Work on evaluating accuracy, adding new classes, additional training data is ongoing.  In particular Olly is interested in improving the variance in behaviour between test sites and setups, as we are trying to predict relative change.
+* Work on evaluating accuracy, adding new classes, additional training data is ongoing.
 
 
 ## Acknowledgements
