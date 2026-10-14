@@ -45,7 +45,7 @@ If your goal is to locate a specific specific but sparce species.  For example y
 If your goal is to monitor **relative change** in populations, then some form of calibration is essential, and it makes no sense to work directly with the 'encounter' prediction as this is based on comparison between raw scores, which are biased by the highly imbalanced training data & what ever the loss function was optimised for during training. 
 
 ### Instance-level scaling
-By this I mean maximising the chance of a correct prediction for a single image.  For most use cases we are estimating relative change, so instance level scaling should be sufficient so that the scaled scores from different classes can be fairly compared, and a single threshold used over all classes.  Any remaining bias on agregated totals could be assumed present in both the control data and the experiment.
+By this I mean maximising the chance of a correct prediction for a single image. For relative change instance level scaling should be sufficient so that the scaled scores from different classes can be fairly compared, and a single threshold used over all classes.  Any remaining bias on agregated totals could be assumed present in both the control data and the experiment.
 
 A good starting point is would be [Platt scaling](https://en.wikipedia.org/wiki/Platt_scaling) (fit a logistic regression model), with model predictions against ground truch for some pre-existing independent data.  
 
@@ -60,9 +60,9 @@ Note that if you do have good historical data to work with, this step is very ch
 
 Suppose we require an absolute count for some reason, or need to estimate an uncertainty of that count.  For example we are trying to compare the sensitivity of two different camera setups, or even completely unrelated observation methods like cameras vs footprint tunnels, or build a long term record where running new models over the old data is impractical.
 
-Imagine a histogram of the true positive scores and true negatives.  If we have already scaled as above for instance level predictions the theshold should be on or near 0.5.  However the shapes of the distributions have no reason to be symmetrical, meaning the area of false positives and false negatives.  That difference in area is equal to the error in the absolute count.  
+Imagine a histogram of the true positive scores and true negatives.  If we have already scaled as above for instance level predictions the theshold should be on or near 0.5.  However the shapes of the distributions have no reason to be symmetrical, meaning the area of false positives and false negatives will not cancel each other.  That difference in area is equal to the error in the absolute count.  
 
-Also it is entirely likely that our localised study images are subtly different in some unexpected way to those of the stored data used for the scaling, potentially adding to any asymmetry.  For example we're trying to count possums, but in a loction where there are many cats present.  This will affect the shape of the possum prediction score distribution, as possums and cats can look similar from some angles.
+Also it is entirely likely that our localised study images are subtly different in some unexpected way to those of the stored data used for the scaling, potentially adding to any asymmetry.  For example we're trying to count rabits, but in a loction where there are many hares present.  This may affect the shape of the rabit prediction score distribution.
 
 To correct for the above errors, we could take a random sub-sample of the study data, then iteratively apply a temperature scaling step, or adjust the threshold slightly until the error is zero for that sub-sample. The advantage of temperature scaling rather than threshold adjustment is that you can leave the final threshold at 0.5 across all classes, and just sum up the 1s to get an estimate of the total, if that is how you aggregateed when performing the scaling step.  So the scores remain interperatable as something like probability.
 
