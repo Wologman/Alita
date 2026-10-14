@@ -45,16 +45,18 @@ If your goal is to locate a specific specific but sparce species.  For example y
 If your goal is to monitor **relative change** in populations, then some form of calibration is essential, and it makes no sense to work directly with the 'encounter' prediction as this is based on comparison between raw scores, which are biased by the highly imbalanced training data & what ever the loss function was optimised for during training. 
 
 ### Instance-level scaling
-By this I mean maximising the chance of a correct prediction for a single image. For relative change instance level scaling should be sufficient so that the scaled scores from different classes can be fairly compared, and a single threshold used over all classes.  Any remaining bias on agregated totals could be assumed present in both the control data and the experiment.
+By this I mean maximising the chance of a correct prediction for a single image. For relative change instance level scaling should be sufficient as any remaining bias on agregated totals could be assumed present in both the control data and the experiment.
 
 A good starting point is would be [Platt scaling](https://en.wikipedia.org/wiki/Platt_scaling) (fit a logistic regression model), with model predictions against ground truch for some pre-existing independent data.  
 
 ```P(y=1 | f) = 1 / (1 + exp(A·f + B))```
-where *f* is the raw score, *y* is the ground truth (0 or 1), A & B are the slope and offset coefficients.   This also has the nice outcome of making the scaled model predictions interpretable as an estimate of probability.
+where *f* is the raw score, *y* is the ground truth (0 or 1), A & B are the slope and offset coefficients.   
+
+Now the scaled scores from different classes can be fairly compared, and a single threshold used over all classes.  This approach also has the nice outcome of making the scaled model predictions interpretable as an estimate of probability.
 
 If such data is unavailable or is too dissimilar from your study images, a *stratified random* sub-sample of your study data could be used, so long as you can label enough samples for each class of interest for a reasonable fit.
 
-Note that if you do have good historical data to work with, this step is very cheap computationaly and requires no new human annotation time.  For Alita the calibration data can not come from DOC's publicly available training data from [Lila Science](https://lila.science/), the model was trained on this.  At the time of releasing of version 3.03 we did not have sufficient independent data to provide a useful collection of slope (A) and offset (B) coefficients.  This will hopefully be available with the next version.
+Note that if you do have good historical data to work with, this step is very cheap computationaly and requires no new human annotation time.  For Alita the calibration data can **not** come from DOC's publicly available training data from [Lila Science](https://lila.science/), the model was trained on this.  At the time of releasing of version 3.03 we did not have sufficient independent data to provide a useful collection of slope (A) and offset (B) coefficients.  This will hopefully be available with the next version.
 
 ### Calibration for estimating absolute counts
 
