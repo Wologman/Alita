@@ -44,7 +44,7 @@ If your goal is to locate a specific specific but sparce species.  For example y
 
 If your goal is to monitor relative change in populations (over time), or to estimate relative abundance between classes then some form of calibration is essential. It makes no sense to work directly with the 'encounter' prediction as this is based on comparison between raw scores, which are biased by the highly imbalanced training data & what ever the loss function was optimised for during training. 
 
-Calibration is too big a topic for this document, and we are still working on the most effective ways to do this.  I have moved the methods and the whole topic to my [WildPyTools repo]([https://github.com/Wologman/wildpytools](https://github.com/Wologman/wildpytools/blob/main/docs/notes/calibration.md).
+Calibration is too big a topic for this document, and we are still working on the most effective ways to do this.  I have moved the methods and the whole topic to my [WildPyTools repo](https://github.com/Wologman/wildpytools/blob/main/docs/notes/calibration.md).
 
 ## The data
 
