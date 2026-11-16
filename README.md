@@ -1,6 +1,6 @@
 # Alita v3.03
 
-If you simply want to download and run the desktop app on a Windows computer then the deployment code along with all the model weights is [abailable from my pCloud drive here](https://filedn.eu/l1723vRFnsquJMoK85UThX0/Alita_Windows_App/)
+If you simply want to download and run the desktop app on a Windows computer then the deployment code along with all the model weights is [available from my pCloud drive here](https://filedn.eu/l1723vRFnsquJMoK85UThX0/Alita_Windows_App/)
 
 ## About Alita
 
@@ -15,7 +15,7 @@ You can work directly with those prediction scores, or use the provided post-pro
 * OR  'Empty',  where **Both** models were below thresholds their preset thresholds.  
 * OR  'Unknown', where the detection model predicted an animal witha score over 0.15, but the classifier provided no scores over the classifier threshold (selectable by the user in the GUI).
 
-The raw model scores will certainly contain systematic bias, and the distribution between true positive scores and true negatives will overlap, meaning no mater where you put a binary threshold, there will be some false positives and false neagatives.  If used carefully it should be orders of magnitude faster than manually checking images, for only a small loss in accuracy.  Typically one class score will be over 0.9 and the rest very small.  However the perfomance can vary with location and camera setup.  Some classes are more easily confused than others (for example cats & possums in the dark can look similar from some angles).
+The raw model scores will certainly contain systematic bias, and the distribution between true positive scores and true negatives will overlap, meaning no mater where you put a binary threshold, there will be some false positives and false neagatives.  If used carefully it should be orders of magnitude faster than manually checking images, for only a small loss in accuracy.  Typically one class score will be over 0.9 and the rest very small. Some classes are more easily confused than others (for example cats & possums in the dark can look similar from some angles).
 
 If your goal is to locate a specific specific but sparce species.  For example you are trying to hunt down every last rat in an island sanctuary, then you can chose a relatively low classification threshold, like 0.3, and accept that you may have some false identifications that need manual checking.
 
@@ -44,7 +44,7 @@ If your goal is to locate a specific specific but sparce species.  For example y
 
 If your goal is to monitor relative change in populations (over time), or to estimate relative abundance between classes then some form of calibration is essential. It makes no sense to work directly with the 'encounter' prediction as this is based on comparison between raw scores, which are biased by the highly imbalanced training data & what ever the loss function was optimised for during training. 
 
-Calibration is too big a topic for this readme, and we are still working on the most effective ways to do this.  So I have moved the methods and the whole topic to my [WildPyTools repo](https://github.com/Wologman/wildpytools).
+Calibration is too big a topic for this document, and we are still working on the most effective ways to do this.  I have moved the methods and the whole topic to my [WildPyTools repo]([https://github.com/Wologman/wildpytools](https://github.com/Wologman/wildpytools/blob/main/docs/notes/calibration.md).
 
 ## The data
 
