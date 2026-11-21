@@ -54,6 +54,17 @@ Calibration is too big a topic for this document, and we are still working on th
 
 * Work on evaluating accuracy, adding new classes, additional training data is ongoing.
 
+## Upcoming improvements
+
+Next minor update is due around January/Feb 2027.  Expect the following minor changes:
+
+* Trained on new data from new locations, including more Norway rats
+* Minor updates to training routines --> some performance improvement
+* ONNX Packaging of the model its self, downloadable stand-alone with CC-BY-SA 4.1 licence for other platforms
+* The model will return a dictionary, with raw prediction scores for each image, plus the pooled backone embedding vector for the crop
+* The GUI will have clearer separation between the model per-image predictions, and any post-processing / calibration steps
+
+We have longer term plans for fine-grained rat, walaby & deer classes, likely by 2028.
 
 ## Acknowledgements
 *  Joris Tinnemans, for his tireless energy getting this work started, and coordinating the dataset curation and processing. 
